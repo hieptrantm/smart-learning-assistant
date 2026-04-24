@@ -1,0 +1,35 @@
+.user-container {
+  width: 350px;
+  margin: 20px auto;
+  font-family: Arial, sans-serif;
+}
+
+.detail-row {
+  margin: 6px 0;
+}
+
+.btn {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  color: white;
+  cursor: pointer;
+  margin-top: 12px;
+  font-size: 15px;
+  border-radius: 5px;
+}
+
+/* Active buttons */
+.verify-btn {
+  background-color: #4CAF50;
+}
+
+.pwd-btn {
+  background-color: #2196F3;
+}
+
+/* Disabled buttons */
+.btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}

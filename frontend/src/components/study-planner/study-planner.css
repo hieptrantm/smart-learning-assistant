@@ -1,0 +1,572 @@
+/* ===== Study Planner Styles ===== */
+
+.study-planner {
+  padding: 32px 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Header */
+.planner-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.planner-header-left h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.planner-header-left p {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.planner-header-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Buttons */
+.planner-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.planner-btn-primary {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+}
+
+.planner-btn-primary:hover {
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
+  transform: translateY(-1px);
+}
+
+.planner-btn-outline {
+  background: white;
+  color: #6366f1;
+  border: 1px solid #e5e7eb;
+}
+
+.planner-btn-outline:hover {
+  background: #f8fafc;
+  border-color: #6366f1;
+}
+
+.planner-btn-ghost {
+  background: transparent;
+  color: #64748b;
+}
+
+.planner-btn-ghost:hover {
+  background: #f1f5f9;
+}
+
+/* New Goal Form */
+.new-goal-form {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 32px;
+}
+
+.new-goal-form h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 20px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.form-group input {
+  padding: 10px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  color: #1e293b;
+  transition: border-color 0.2s;
+  outline: none;
+}
+
+.form-group input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* Planner Content */
+.planner-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.planner-section {
+  margin-bottom: 8px;
+}
+
+.section-heading {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Goals Grid */
+.goals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.goal-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 24px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.goal-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+}
+
+.goal-card-on-track::before {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.goal-card-behind::before {
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+}
+
+.goal-card:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
+}
+
+.goal-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.goal-subject {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6366f1;
+}
+
+.goal-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 100px;
+}
+
+.goal-status-on-track {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+.goal-status-behind {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+}
+
+.goal-target {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 16px;
+}
+
+.goal-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 100px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.goal-progress-fill {
+  height: 100%;
+  border-radius: 100px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  transition: width 0.6s ease;
+}
+
+.goal-card-behind .goal-progress-fill {
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+}
+
+.goal-meta {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.goal-meta span {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.goal-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.goal-action-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  border-radius: 8px;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.goal-action-btn:hover {
+  background: #f1f5f9;
+  color: #6366f1;
+  border-color: #6366f1;
+}
+
+.goal-action-btn-danger:hover {
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+/* Schedule Grid */
+.schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px;
+}
+
+.schedule-day {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  min-height: 200px;
+}
+
+.schedule-day-header {
+  padding: 10px;
+  background: #f1f5f9;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #475569;
+  text-align: center;
+}
+
+.schedule-day-body {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.schedule-task {
+  padding: 8px 10px;
+  background: rgba(99, 102, 241, 0.06);
+  border-left: 3px solid #6366f1;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.schedule-time {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.schedule-subject {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.schedule-topic {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.schedule-empty {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.8rem;
+  padding: 20px 0;
+}
+
+/* Notifications */
+.planner-notifications {
+  margin-top: 32px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(139, 92, 246, 0.05));
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  border-radius: 16px;
+  padding: 24px 28px;
+}
+
+.notif-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.notif-content > svg {
+  color: #6366f1;
+  flex-shrink: 0;
+}
+
+.notif-content > div {
+  flex: 1;
+  min-width: 200px;
+}
+
+.notif-content strong {
+  display: block;
+  font-size: 0.9rem;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+
+.notif-content p {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .schedule-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .study-planner {
+    padding: 20px 16px;
+  }
+
+  .planner-header {
+    flex-direction: column;
+  }
+
+  .planner-header-left h1 {
+    font-size: 1.3rem;
+  }
+
+  .goals-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .schedule-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .schedule-day {
+    min-height: auto;
+  }
+}
+
+/* ── Loading & Empty ── */
+.planner-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 12px;
+  color: #64748b;
+}
+
+.planner-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 12px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.planner-empty h3 {
+  color: #475569;
+  margin: 0;
+}
+
+.planner-empty p {
+  color: #94a3b8;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+@keyframes planner-spin-anim {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.planner-spin {
+  animation: planner-spin-anim 1s linear infinite;
+}
+
+/* ── Processing & pending status ── */
+.goal-status-processing {
+  background: rgba(217, 119, 6, 0.08);
+  color: #d97706;
+}
+
+.goal-status-failed {
+  background: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+}
+
+.goal-status-pending {
+  background: rgba(99, 102, 241, 0.08);
+  color: #6366f1;
+}
+
+/* ── Expanded schedule inside goal card ── */
+.goal-schedule-expanded {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.schedule-day-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.schedule-day-header-inline {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.schedule-task-inline {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 6px 8px;
+  background: rgba(99, 102, 241, 0.04);
+  border-radius: 6px;
+  border-left: 2px solid #6366f1;
+}
+
+.schedule-time-inline {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  font-weight: 600;
+  min-width: 90px;
+  flex-shrink: 0;
+}
+
+.schedule-task-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.schedule-task-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.schedule-task-desc {
+  font-size: 0.68rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.schedule-more {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #6366f1;
+  font-weight: 600;
+  padding: 8px;
+}

@@ -1,0 +1,97 @@
+.detect {
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    width: 80%;
+    margin: auto;
+}
+
+.info-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.info-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.info-field {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: #f9fafb;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 60px;
+    min-width: 230px;
+}
+
+.cook-button {
+    padding: 10px 20px;
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+}
+
+.cook-button:hover {
+    background-color: #2563eb;
+}
+
+.cook-button:active {
+    background-color: #1d4ed8;
+}
+
+/* Mobile responsiveness - hide text on small screens */
+@media (max-width: 768px) {
+    .detect {
+        width: 100%;
+    }
+
+    .cook-button-text {
+        display: none;
+    }
+    
+    .cook-button {
+        padding: 10px;
+    }
+}
+
+.recommendation-label {
+    font-size: 16px;
+    font-weight: 600;
+    color: #374151;
+    margin-top: 8px;
+}
+
+.recommendation-field {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    background-color: #f9fafb;
+    resize: vertical;
+}
+
+.recommendation-field:focus,
+.info-field:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
