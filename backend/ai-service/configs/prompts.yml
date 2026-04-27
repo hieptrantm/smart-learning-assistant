@@ -430,10 +430,15 @@ explain_qa_prompt: |
   [Câu trả lời thực tế của người học]
   {actual_answer}
 
-  [Yêu cầu của người dùng]
-  {user_question} 
-
   Yêu cầu trả lời:
-  - Giải thích ngắn gọn người học đúng hay sai ở đâu.
+  - Xưng hô là "bạn" để tạo cảm giác thân thiện.
+  - Xác định người học trả lời đúng hay sai.
+  - Sau đó, giải thích ngắn gọn người học đúng hay sai ở đâu.
   - Nêu lý do bám sát đáp án đúng.
-  
+
+  FORMAT OUTPUT:
+  - Bạn phải trả lời theo định dạng JSON sau:
+  {{
+    "is_correct": true/false,
+    "explanation": "Giải thích ngắn gọn tại sao bạn đúng hoặc sai, dựa trên đáp án đúng và câu trả lời của bạn."
+  }}

@@ -52,6 +52,7 @@ class OpenAILLM(BaseLLM):
                 model=self.model_name,
                 messages=openai_messages,
                 stream=False,
+                temperature=kwargs.get("temperature", 0.7),
                 **kwargs
             )
             content = response.choices[0].message.content or getattr(response.choices[0].message, "reasoning_content", None) or ""

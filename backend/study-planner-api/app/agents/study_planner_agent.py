@@ -235,13 +235,25 @@ class StudyPlannerAgent:
         if not plan_result:
             return {"current_step": "end", "previous_step": "observation"}
         
-        logger.info(f"[observation] Plan ready with {len(plan_result)} events, preparing tool calls")
+        if isinstance(plan_result, str):
+            plan_result = self._parse_plan_json(plan_result)
+        filtered_plan_result = []
+        for plan in plan_result:
+            filtered_plan_result.append({
+                "summary": plan.get("summary", ""),
+                "location": plan.get("location", ""),
+                "description": plan.get("description", ""),
+                "start": plan.get("start", {}),
+                "end": plan.get("end", {}),
+            })
+        
+        logger.info(f"[observation] Plan ready with {len(filtered_plan_result)} events, preparing tool calls")
         logger.info(f"Google access token: {state.get('google_access_token')}")
         logger.info(f"Google refresh token: {state.get('google_refresh_token')}")
 
 
         tool_calls = list(state.get("tool_calls", []))
-        for event in plan_result:
+        for event in filtered_plan_result:
             tool_calls.append({
                 "tool_name": "build_one_schedule",
                 "parameters": {
@@ -527,7 +539,7 @@ class StudyPlannerAgent:
                         start_time=start_time,
                         end_time=end_time,
                         title=ev.get("summary", ""),
-                        content=ev.get("description", ""),
+                        content=ev.get("aggregated_content", ""),
                     )
                     db.add(session)
 

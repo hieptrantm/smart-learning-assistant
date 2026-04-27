@@ -52,10 +52,11 @@ class SessionResult:
     nodes: list[NodeInfo]
     relationships: list[RelationshipInfo]
     context_nodes: list[NodeInfo]
+    aggregate_text: Optional[str] = None
     title: Optional[str] = None
     description: Optional[str] = None
 
-gen_title_prompt = """Bạn là một chuyên gia giáo dục và tổng hợp kiến thức. Nhiệm vụ của bạn là viết một tiêu đề ngắn gọn (3-5 từ) cho buổi học hôm nay. Chỉ gen ra tiêu đề bài học, không ghi gì thêm.
+gen_title_prompt = """Bạn là một chuyên gia giáo dục và tổng hợp kiến thức. Nhiệm vụ của bạn là viết một tiêu đề ngắn gọn (7-10 từ) cho buổi học hôm nay. Chỉ gen ra tiêu đề bài học, không ghi gì thêm.
 """    
 gen_desc_prompt = """
 Bạn là một chuyên gia giáo dục và tổng hợp kiến thức. Nhiệm vụ của bạn là viết mô tả ngắn gọn (1-2 câu) về nội dung của bài học hôm nay. Chỉ tạo mô tả thành một đoạn không ghi gì thêm
@@ -119,9 +120,7 @@ class TreeScheduler:
 
         # 1. BFS-ordered node list
         bfs_ordered = self._bfs_order()
-        logger.info(
-            f"BFS order: {[(n.node_id, n.name) for n in bfs_ordered]}"
-        )
+        
         logger.info(f"checkpoint_node_id received: {checkpoint_node_id!r}")
 
         # 2. Apply checkpoint: skip already-studied nodes
@@ -143,6 +142,10 @@ class TreeScheduler:
 
         if not remaining_nodes:
             return []
+        
+        logger.info(
+            f"All filtered Nodes with BFS Order: {[(n.node_id, n.name) for n in remaining_nodes]}"
+        )
 
         # 3. Distribute nodes proportionally across sessions
         session_node_lists = self._distribute(remaining_nodes, session_weights)
@@ -205,10 +208,24 @@ class TreeScheduler:
             title = None
             description = None
             if self._llm_client:
+                nodes_text = "\n".join(
+                        f"- {n.name}" + (f": {n.description}" if n.description else "")
+                        for n in nodes_in_session
+                    )
+                rels_text = "\n".join(
+                        f"  [{r.rel_type}] {self._nodes[r.start_identity].name} -> {self._nodes[r.end_identity].name}"
+                        for r in rels
+                        if r.start_identity in self._nodes and r.end_identity in self._nodes
+                    )
+                
+                aggregate_text = f"Nội dung buổi học hôm nay bao gồm:\n{nodes_text}"
+                if rels_text:
+                    aggregate_text += f"\nCác mối quan hệ giữa các nội dung:\n{rels_text}"
+                
                 try:
                     title_response = await self._llm_client.ainvoke([
                         SystemMessage(content=gen_title_prompt),
-                        HumanMessage(content="\n".join(n.name for n in nodes_in_session)),
+                        HumanMessage(content=aggregate_text),
                     ])
                     title = title_response.content.strip() if hasattr(title_response, "content") else str(title_response).strip()
                 except Exception as e:
@@ -217,19 +234,10 @@ class TreeScheduler:
                     )
 
                 try:
-                    nodes_text = "\n".join(
-                        f"- {n.name}" + (f": {n.description[:200]}" if n.description else "")
-                        for n in nodes_in_session
-                    )
-                    rels_text = "\n".join(
-                        f"  [{r.rel_type}] {self._nodes[r.start_identity].name} -> {self._nodes[r.end_identity].name}"
-                        for r in rels
-                        if r.start_identity in self._nodes and r.end_identity in self._nodes
-                    )
                     desc_response = await self._llm_client.ainvoke([
                         SystemMessage(content=gen_desc_prompt),
                         HumanMessage(content=gen_qa_prompt.format(
-                            nodes=nodes_text + ("\n" + rels_text if rels_text else "")
+                            nodes=aggregate_text
                         )),
                     ])
                     description = desc_response.content.strip() if hasattr(desc_response, "content") else str(desc_response).strip()
@@ -244,6 +252,7 @@ class TreeScheduler:
                 weight=weight,
                 title=title,
                 description=description,
+                aggregate_text=aggregate_text,
                 nodes=nodes_in_session,
                 relationships=rels,
                 context_nodes=context_nodes,

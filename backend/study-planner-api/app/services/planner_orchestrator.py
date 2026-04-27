@@ -1,10 +1,3 @@
-"""
-planner_orchestrator.py -- Background task that:
-  1. Sends PDF to data-ingestor for indexing
-  2. Polls ingest status until done
-  3. Runs the LangGraph planner agent (check_status -> observation -> planner -> tools -> end)
-"""
-
 import asyncio
 import traceback
 from datetime import datetime

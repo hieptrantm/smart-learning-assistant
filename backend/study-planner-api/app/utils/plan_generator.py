@@ -249,6 +249,7 @@ class PlanGenerator:
                 "summary": summary[:250],
                 "location": "Online",
                 "description": description,
+                "aggregated_content": result.aggregate_text if result.aggregate_text else description,
                 "checkpoint_node_id": result.checkpoint_node_id if result.checkpoint_node_id else "root",
                 "start": {
                     "dateTime": f"{d}T{st}:00+07:00",
@@ -260,4 +261,3 @@ class PlanGenerator:
                 },
             })
         return events
-

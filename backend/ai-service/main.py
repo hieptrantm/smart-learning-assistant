@@ -332,22 +332,23 @@ async def assistant_chat_completions(request: ChatRequest):
 
 @app.post("/assistant/explain-answer", response_model=ChatResponse)
 async def explain(quiz_question: Question, actual_answer: str, user_question: str = ""):
-
+    logger.info(f"Question: {quiz_question.text[:100]}, explanation: {quiz_question.explanation[:100]}")
+    logger.info(f"Actual answer: {actual_answer[:100]}, user question: {user_question[:100]}")
     session_id = str(uuid.uuid4())
     llm_messages = [
         SystemMessage(content=explain_system_prompt),
         HumanMessage(	
             content=explain_qa_prompt.format(   
                 quiz_question=json.dumps(quiz_question.model_dump()),
-                actual_answer=actual_answer,
-                user_question=user_question,
+                actual_answer=user_question, #front-end bị đảo một chút
             )		
         ),
     ]
-    logger.info("[%s] incoming question: %s", session_id, user_question[:120])
 
     try:
-        response = await llm_client.ainvoke(llm_messages)
+        response = await llm_client.ainvoke(messages=llm_messages)
+        logger.info("[%s] explanation generated, length: %d", session_id, len(response.content))
+        logger.info("[%s] full explanation response: %s", session_id, response.content)
         return ChatResponse(
             id=session_id,
             reply=response.content,

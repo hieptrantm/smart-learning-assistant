@@ -144,15 +144,16 @@ export function useChatbotService() {
     }
 
     // Detect correctness from common Vietnamese/English keywords in the reply
-    const lower = reply.toLowerCase();
-    const correct =
-      lower.includes("chính xác") ||
-      lower.includes("đúng") ||
-      lower.includes("correct") ||
-      lower.includes("acceptable") ||
-      lower.includes("chấp nhận");
+    const match = reply.match(/\{[\s\S]*\}/);
+    if (match) {
+      const parsed = JSON.parse(match[0]);
+      
+      const isCorrect = parsed.is_correct === true || parsed.is_correct === "true";
+      const explanation = parsed.explanation;
+      return { isCorrect, explanation: explanation || reply };
+    }
 
-    return { correct, explanation: reply };
+  
   }, [fetchWithAuth]);
 
   return useMemo(() => ({
