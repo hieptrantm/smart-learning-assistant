@@ -135,8 +135,11 @@ export function useChatbotService() {
       const jsonMatch = reply.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
-        if (typeof parsed.correct === "boolean") {
-          return { correct: parsed.correct, explanation: parsed.explanation || reply };
+        if (typeof parsed.correct === "boolean" || parsed.correct === "true" || parsed.correct === "false") {
+          return {
+            correct: parsed.correct === true || parsed.correct === "true",
+            explanation: parsed.explanation || reply,
+          };
         }
       }
     } catch {
@@ -147,13 +150,14 @@ export function useChatbotService() {
     const match = reply.match(/\{[\s\S]*\}/);
     if (match) {
       const parsed = JSON.parse(match[0]);
-      
+
       const isCorrect = parsed.is_correct === true || parsed.is_correct === "true";
       const explanation = parsed.explanation;
-      return { isCorrect, explanation: explanation || reply };
+      return { correct: isCorrect, explanation: explanation || reply };
     }
 
-  
+    return { correct: false, explanation: reply || "Không thể phân tích phản hồi từ AI." };
+
   }, [fetchWithAuth]);
 
   return useMemo(() => ({

@@ -2,6 +2,7 @@
 # scheduler.py - Divide tree nodes into study sessions
 # ============================================================
 
+import asyncio
 import json
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
@@ -203,48 +204,55 @@ class TreeScheduler:
                 for i in context_identity_needed
                 if i in self._nodes
             ]
+
+            nodes_text = "\n".join(
+                f"- {n.name}" + (f": {n.description}" if n.description else "")
+                for n in nodes_in_session
+            )
+            rels_text = "\n".join(
+                f"  [{r.rel_type}] {self._nodes[r.start_identity].name} -> {self._nodes[r.end_identity].name}"
+                for r in rels
+                if r.start_identity in self._nodes and r.end_identity in self._nodes
+            )
+            aggregate_text = "Nội dung buổi học hôm nay bao gồm:\n"
+            aggregate_text += nodes_text if nodes_text else "- Chưa có nội dung mới trong buổi này"
+            if rels_text:
+                aggregate_text += f"\nCác mối quan hệ giữa các nội dung:\n{rels_text}"
             
             # Generate title and description via LLM if client is available
             title = None
             description = None
-            if self._llm_client:
-                nodes_text = "\n".join(
-                        f"- {n.name}" + (f": {n.description}" if n.description else "")
-                        for n in nodes_in_session
+            if self._llm_client and nodes_in_session:
+                title_task = self._llm_client.ainvoke([
+                    SystemMessage(content=gen_title_prompt),
+                    HumanMessage(content=aggregate_text),
+                ])
+                desc_task = self._llm_client.ainvoke([
+                    SystemMessage(content=gen_desc_prompt),
+                    HumanMessage(content=gen_qa_prompt.format(nodes=aggregate_text)),
+                ])
+                title_response, desc_response = await asyncio.gather(
+                    title_task,
+                    desc_task,
+                    return_exceptions=True,
+                )
+                if isinstance(title_response, Exception):
+                    logger.warning(
+                        "[TreeScheduler] LLM title generation failed for session %s: %s",
+                        idx + 1,
+                        title_response,
                     )
-                rels_text = "\n".join(
-                        f"  [{r.rel_type}] {self._nodes[r.start_identity].name} -> {self._nodes[r.end_identity].name}"
-                        for r in rels
-                        if r.start_identity in self._nodes and r.end_identity in self._nodes
-                    )
-                
-                aggregate_text = f"Nội dung buổi học hôm nay bao gồm:\n{nodes_text}"
-                if rels_text:
-                    aggregate_text += f"\nCác mối quan hệ giữa các nội dung:\n{rels_text}"
-                
-                try:
-                    title_response = await self._llm_client.ainvoke([
-                        SystemMessage(content=gen_title_prompt),
-                        HumanMessage(content=aggregate_text),
-                    ])
+                else:
                     title = title_response.content.strip() if hasattr(title_response, "content") else str(title_response).strip()
-                except Exception as e:
-                    logger.warning(
-                        f"[TreeScheduler] LLM title generation failed for session {idx + 1}: {e}"
-                    )
 
-                try:
-                    desc_response = await self._llm_client.ainvoke([
-                        SystemMessage(content=gen_desc_prompt),
-                        HumanMessage(content=gen_qa_prompt.format(
-                            nodes=aggregate_text
-                        )),
-                    ])
-                    description = desc_response.content.strip() if hasattr(desc_response, "content") else str(desc_response).strip()
-                except Exception as e:
+                if isinstance(desc_response, Exception):
                     logger.warning(
-                        f"[TreeScheduler] LLM description generation failed for session {idx + 1}: {e}"
+                        "[TreeScheduler] LLM description generation failed for session %s: %s",
+                        idx + 1,
+                        desc_response,
                     )
+                else:
+                    description = desc_response.content.strip() if hasattr(desc_response, "content") else str(desc_response).strip()
 
             results.append(SessionResult(
                 session_index=idx + 1,
@@ -259,10 +267,12 @@ class TreeScheduler:
             ))
             
             logger.info(
-                f"Session {idx + 1}: \n"
-                f"  checkpoint_node_id='{results[-1].checkpoint_node_id}'\n"
-                f"  Nodes name: {[n.name for n in nodes_in_session]}\n"
-            )    
+                "[TreeScheduler] Session %s | checkpoint_node_id=%r | nodes=%s | context_nodes=%s",
+                idx + 1,
+                results[-1].checkpoint_node_id,
+                [n.name for n in nodes_in_session],
+                [n.name for n in context_nodes],
+            )
 
             # Nodes from this session become "studied" for the next session
             studied_identities |= session_identities

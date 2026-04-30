@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 from datetime import date, timedelta
@@ -7,9 +6,13 @@ from neo4j import AsyncGraphDatabase
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session as DBSession
 
-from app.config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD, TREE_SUBJECT_ID_SUFFIX
+from app.config import NEO4J_PASSWORD, NEO4J_URI, NEO4J_USER
 from app.models.study_subject import StudySubject
-from app.utils.scheduler import TreeScheduler
+from app.utils.graph_scheduler import (
+    GraphScheduler,
+    graph_node_from_neo4j,
+    graph_relationship_from_neo4j,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -18,21 +21,18 @@ WEEKDAY_MAP = {
 }
 
 
-class PlanGenerator:
-
+class GraphPlanGenerator:
     def __init__(
         self,
         neo4j_uri: str = NEO4J_URI,
         neo4j_user: str = NEO4J_USER,
         neo4j_password: str = NEO4J_PASSWORD,
-        tree_suffix: str = TREE_SUBJECT_ID_SUFFIX,
         output_dir: str = None,
         llm_client=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
         self.neo4j_password = neo4j_password
-        self.tree_suffix = tree_suffix
         self.output_dir = output_dir or os.path.join(os.path.dirname(__file__), "output")
         self.llm_client = llm_client
         os.makedirs(self.output_dir, exist_ok=True)
@@ -50,28 +50,20 @@ class PlanGenerator:
 
         sessions = self._build_session_slots(db_url, subject_id, start_date, end_date)
         if not sessions:
-            logger.warning("[PlanGenerator] No sessions from free slots")
+            logger.warning("[GraphPlanGenerator] No sessions from free slots")
             return []
 
-        tree_subject_id = subject_name + self.tree_suffix
-        raw_paths = await self._fetch_tree_paths(tree_subject_id)
-        if not raw_paths:
-            logger.warning(f"[PlanGenerator] No tree data for {tree_subject_id}")
-            return []
-
-        self._save_json(subject_name, raw_paths)
-
-        scheduler = TreeScheduler(raw_paths, llm_client=self.llm_client)
-        num_content = len([n for n in scheduler._nodes.values() if n.node_type != "ROOT"])
-
+        scheduler = await self._build_graph_scheduler(subject_name)
+        num_content = len(scheduler._nodes)
         if num_content == 0:
+            logger.warning("[GraphPlanGenerator] No graph data for %s", subject_name)
             return []
 
         if len(sessions) > num_content:
             step = len(sessions) / num_content
-            sessions = [sessions[int(i * step)] for i in range(num_content)]
+            sessions = [sessions[int(index * step)] for index in range(num_content)]
 
-        weights = [s["hours"] for s in sessions]
+        weights = [session["hours"] for session in sessions]
         results = await scheduler.schedule(weights, checkpoint_node_id)
         return self._to_calendar_events(sessions, results, subject_name)
 
@@ -103,7 +95,6 @@ class PlanGenerator:
                     if hours > 0:
                         parsed.append((start_time, end_time, hours))
 
-                # Merge consecutive slots (end time of previous == start time of next)
                 merged = []
                 for start_time, end_time, hours in parsed:
                     if merged and merged[-1]["end_time"] == start_time:
@@ -125,7 +116,6 @@ class PlanGenerator:
     @staticmethod
     def _parse_time_slot(time_slot):
         if "-" not in time_slot:
-            # Single time like "07:00" → treat as 1-hour slot ending at start+1h
             try:
                 parts = time_slot.strip().split(":")
                 s_min = int(parts[0]) * 60 + (int(parts[1]) if len(parts) > 1 else 0)
@@ -135,6 +125,7 @@ class PlanGenerator:
                 return start_fmt, end_fmt, 1.0
             except (ValueError, IndexError):
                 return time_slot, time_slot, 1.0
+
         start_str, end_str = time_slot.split("-", 1)
         start_str, end_str = start_str.strip(), end_str.strip()
         try:
@@ -149,103 +140,73 @@ class PlanGenerator:
         except (ValueError, IndexError):
             return start_str, end_str, 1.0
 
-    async def _fetch_tree_paths(self, tree_subject_id):
+    async def _build_graph_scheduler(self, subject_name: str) -> GraphScheduler:
+        nodes, relationships = await self._fetch_graph_snapshot(subject_name)
+        logger.info(
+            "[GraphPlanGenerator] Fetched raw graph for %s: %s nodes, %s relationships",
+            subject_name,
+            len(nodes),
+            len(relationships),
+        )
+        return GraphScheduler(nodes, relationships, llm_client=self.llm_client)
+
+    async def _fetch_graph_snapshot(self, subject_name: str):
         driver = AsyncGraphDatabase.driver(
             self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
         )
-        raw_paths = []
+        nodes = {}
+        relationships = {}
         try:
             async with driver.session() as session:
                 result = await session.run(
-                    "MATCH p=(root:TreeRoot {subject_id: $sid})-[*1..]->(n) RETURN p",
-                    sid=tree_subject_id,
+                    """
+                    MATCH (n:Entity {subject_id: $sid})
+                    OPTIONAL MATCH (n)-[r]->(m:Entity {subject_id: $sid})
+                    RETURN n, r, m
+                    """,
+                    sid=subject_name,
                 )
                 async for record in result:
-                    raw_paths.append(self._path_to_dict(record["p"]))
+                    node = record["n"]
+                    nodes[node.id] = graph_node_from_neo4j(node)
+
+                    rel = record["r"]
+                    target = record["m"]
+                    if rel is None or target is None:
+                        continue
+
+                    nodes[target.id] = graph_node_from_neo4j(target)
+                    relationships[rel.id] = graph_relationship_from_neo4j(rel)
         finally:
             await driver.close()
-        logger.info(f"[PlanGenerator] Fetched {len(raw_paths)} paths for {tree_subject_id}")
-        return raw_paths
 
-
-    def _path_to_dict(self, path):
-        nodes = list(path.nodes)
-        rels = list(path.relationships)
-        segments = []
-        for i, rel in enumerate(rels):
-            segments.append({
-                "start": self._node_to_dict(nodes[i]),
-                "relationship": self._rel_to_dict(rel, nodes[i], nodes[i + 1]),
-                "end": self._node_to_dict(nodes[i + 1]),
-            })
-        return {
-            "p": {
-                "start": self._node_to_dict(nodes[0]),
-                "end": self._node_to_dict(nodes[-1]),
-                "segments": segments,
-                "length": float(len(rels)),
-            }
-        }
-
-    @staticmethod
-    def _node_to_dict(node):
-        return {
-            "identity": node.id,
-            "labels": list(node.labels),
-            "properties": dict(node),
-            "elementId": node.element_id,
-        }
-
-
-    @staticmethod
-    def _rel_to_dict(rel, start_node, end_node):
-        return {
-            "identity": rel.id,
-            "start": start_node.id,
-            "end": end_node.id,
-            "type": rel.type,
-            "properties": dict(rel),
-            "elementId": rel.element_id,
-        }
-
-    def _save_json(self, subject_name, raw_paths):
-        path = os.path.join(self.output_dir, f"{subject_name}_tree.json")
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(raw_paths, f, ensure_ascii=False, indent=2)
-        logger.info(f"[PlanGenerator] Saved tree to {path}")
-        return path
+        return list(nodes.values()), list(relationships.values())
 
     @staticmethod
     def _to_calendar_events(sessions, results, subject_name):
         events = []
         for session_info, result in zip(sessions, results):
-            content_nodes = [n for n in result.nodes if n.node_type != "ROOT"]
-            if not content_nodes:
+            if not result.nodes:
                 continue
 
             d = session_info["date"]
             st = session_info["start_time"][:5]
             et = session_info["end_time"][:5]
 
-            # Use LLM-generated title if available, else fallback to node names
             if result.title:
-                summary = f"{result.title}"
+                summary = result.title
             else:
-                names = [n.name for n in content_nodes]
-                summary = f"{subject_name} - {', '.join(names)}"
+                summary = f"{subject_name} - {', '.join(node.name for node in result.nodes)}"
 
-            # Use LLM-generated description if available, else fallback to node details
             if result.description:
                 description = result.description
             else:
                 desc_parts = []
-                for n in content_nodes:
-                    if n.description:
-                        desc_parts.append(f"- {n.name}: {n.description[:300]}")
-                    for tag in n.tags:
-                        desc_parts.append(
-                            f"  [{tag.get('rel_type', '')}] -> {tag.get('target_name', '')}"
-                        )
+                for node in result.nodes:
+                    if node.description:
+                        desc_parts.append(f"- {node.name}: {node.description[:300]}")
+                    for tag in node.tags:
+                        desc_parts.append(f"  [{tag.get('rel_type', '')}] -> {tag.get('target_name', '')}")
                 description = "\n".join(desc_parts) if desc_parts else f"Nội dung học {subject_name}"
 
             events.append({
@@ -253,7 +214,7 @@ class PlanGenerator:
                 "location": "Online",
                 "description": description,
                 "aggregated_content": result.aggregate_text if result.aggregate_text else description,
-                "checkpoint_node_id": result.checkpoint_node_id if result.checkpoint_node_id else "root",
+                "checkpoint_node_id": result.checkpoint_node_id if result.checkpoint_node_id else "graph_root",
                 "start": {
                     "dateTime": f"{d}T{st}:00+07:00",
                     "timeZone": "Asia/Ho_Chi_Minh",
