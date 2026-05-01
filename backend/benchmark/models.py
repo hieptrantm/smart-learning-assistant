@@ -9,8 +9,17 @@ class SubjectDescriptor:
     subject_id: int
     subject_name: str
     target_grade: float | None
+    start_date: str | None
     end_date: str | None
     free_slots: dict[str, list[str]]
+
+
+@dataclass
+class BenchmarkJob:
+    subject: SubjectDescriptor
+    pdf_path: str | None = None
+    raw_chunks_path: str | None = None
+    session_weights: list[float] | None = None
 
 
 @dataclass
@@ -28,14 +37,12 @@ class IngestionBenchmarkResult:
 class SessionBenchmark:
     session_index: int
     weight: float
-    node_count: int
-    relationship_count: int
-    context_node_count: int
+    primary_entity_count: int
+    context_entity_count: int
+    activated_relation_count: int
+    activated_prerequisite_count: int
+    activated_part_of_count: int
     prompt_tokens: int
-    relevant_context_edges: int
-    preserved_context_edges: int
-    context_retention_ratio: float
-    payload_chunk_count: int
     aggregate_preview: str
 
 
@@ -49,14 +56,21 @@ class StrategyBenchmarkResult:
     session_weights: list[float]
     total_prompt_tokens: int
     avg_prompt_tokens: float
-    relevant_context_edges: int
-    preserved_context_edges: int
-    context_retention_ratio: float
-    subject_chunk_count: int
-    payload_chunk_count: int
-    payload_chunk_ratio: float
-    node_count: int
-    relationship_count: int
+    unique_primary_entities: int
+    total_primary_entity_mentions: int
+    entity_redundancy_ratio: float
+    avg_adjacent_entity_overlap: float
+    prerequisite_total: int
+    prerequisite_evaluable: int
+    prerequisite_correct: int
+    prerequisite_violations: int
+    prerequisite_ordering_accuracy: float
+    key_relation_total: int
+    activated_relation_total: int
+    relation_activation_rate: float
+    prerequisite_activation_rate: float
+    part_of_activation_rate: float
+    tokens_per_unique_entity: float
     sessions: list[SessionBenchmark] = field(default_factory=list)
 
 
@@ -66,6 +80,7 @@ class BenchmarkReport:
     ingestion: IngestionBenchmarkResult | None
     tree_based: StrategyBenchmarkResult
     knowledge_graph: StrategyBenchmarkResult
+    vector_db_chunks: StrategyBenchmarkResult
     delta: dict[str, Any]
 
     def to_dict(self) -> dict[str, Any]:

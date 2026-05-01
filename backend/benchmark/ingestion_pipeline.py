@@ -24,6 +24,14 @@ class BenchmarkIngestionPipeline:
         self._indexing_engine: IndexingEngine | None = None
         self._llm_client = llm_client
 
+    def warmup(self) -> None:
+        _ = self.chunking_engine
+        _ = self.indexing_engine
+
+    def close(self) -> None:
+        if self._indexing_engine is not None:
+            self._indexing_engine.close()
+
     @property
     def chunking_engine(self) -> ChunkingEngine:
         if self._chunking_engine is None:

@@ -4,12 +4,13 @@ Thư mục này chứa bộ benchmark để so sánh hai cách sinh learning pat
 
 - `tree_based`: chạy trên cây `TreeRoot` / `TreeNode` được build từ Neo4j.
 - `knowledge_graph`: chạy trực tiếp trên raw `Entity` graph trong Neo4j.
+- `vector_db_chunks`: chạy trực tiếp trên raw chunks đã index trong Qdrant, không dùng graph edges để lập plan.
 
-Benchmark được thiết kế để đo cả phần ingest lẫn phần planning, sau đó ghi report JSON để so sánh thời gian, token và context retention.
+Benchmark được thiết kế để đo cả phần ingest lẫn phần planning. Phần planning hiện tập trung vào 4 metric chính: thứ tự prerequisite, mức kích hoạt relation, độ lặp entity giữa các session và hiệu quả token.
 
 ## 1. Các file chính
 
-- `main.py`: entrypoint chạy benchmark. File này khởi tạo `TogetherLLM`, ingest dữ liệu nếu cần, sau đó chạy đồng thời `tree_based` và `knowledge_graph`.
+- `main.py`: entrypoint chạy benchmark. File này khởi tạo `TogetherLLM`, ingest dữ liệu nếu cần, sau đó chạy đồng thời `tree_based`, `knowledge_graph` và `vector_db_chunks`.
 - `ingestion_pipeline.py`: pipeline ingest dùng lại flow từ `data-ingestor`, gồm chunking, extraction, profiling, lưu Neo4j và Qdrant.
 - `strategy_runner.py`: tải raw graph từ Neo4j, gọi tree scheduler và graph scheduler, rồi tổng hợp metrics.
 - `reset_subject.py`: xóa một subject cũ khỏi Postgres, Neo4j, Qdrant và tạo lại subject mới với cùng metadata.
@@ -31,11 +32,14 @@ Report benchmark ghi các nhóm chỉ số sau:
 - `ingestion.entities_raw`: số entity extract thô.
 - `ingestion.entities_profiled`: số entity sau profiling.
 - `ingestion.relations`: số quan hệ extract được.
-- `tree_based.total_ms` và `knowledge_graph.total_ms`: thời gian chạy từng strategy.
-- `total_prompt_tokens` và `avg_prompt_tokens`: lượng token prompt ước lượng.
-- `context_retention_ratio`: tỉ lệ context edge giữ lại trong từng strategy.
-- `payload_chunk_ratio`: tỉ lệ chunk thực sự được kéo vào payload học.
-- `sessions[]`: chi tiết từng buổi học, gồm số node, số edge, số context node, token và preview nội dung.
+- `tree_based.total_ms`, `knowledge_graph.total_ms` và `vector_db_chunks.total_ms`: thời gian chạy từng strategy.
+- `prerequisite_ordering_accuracy`: tỉ lệ prerequisite được sắp đúng thứ tự học.
+- `relation_activation_rate`: tỉ lệ relation quan trọng (`PREREQUISITE`, `PART_OF`) thật sự được kích hoạt trong plan.
+- `entity_redundancy_ratio`: mức lặp entity chính giữa các session.
+- `tokens_per_unique_entity` và `avg_prompt_tokens`: hiệu quả token theo entity và theo session.
+- `sessions[]`: chi tiết từng buổi học, gồm số primary entity, context entity, activated relation, token và preview nội dung.
+
+Mô tả chi tiết cách tính và cách đọc các metric nằm trong file `METRICS.md`.
 
 ## 3. Yêu cầu môi trường
 
@@ -61,7 +65,82 @@ py -3.11 -m venv .venv
 pip install -r requirements.txt
 ```
 
-## 5. Reset subject cũ
+## 5. Benchmark subject mới hoàn toàn
+
+Nếu chưa có gì trong Postgres và chỉ muốn benchmark một subject mới từ PDF hoặc raw chunks, có thể truyền metadata trực tiếp qua CLI.
+
+Chạy từ thư mục `backend`:
+
+```bash
+python -m benchmark.main \
+  --subject-name "cổ tích" \
+  --subject-id 50 \
+  --slots fri=09:00-11:00 tue=13:00-15:00 \
+  --pdf-path "benchmark/Cổ tích.pdf"
+```
+
+Ghi chú:
+
+- `--subject-name` là khóa chính dùng để lưu KG vào Neo4j và Qdrant.
+- `--subject-id` chỉ dùng để đặt tên report output. Nếu bỏ qua thì report sẽ dùng `subject_0_benchmark.json`.
+- `--slots` là bắt buộc với subject mới. Có thể truyền slot dạng `day=09:00` hoặc `day=09:00-11:00`.
+- Luồng này không đọc metadata từ Postgres.
+
+## 6. Benchmark nhiều subject từ JSON
+
+Nếu muốn chạy batch khoảng 10-20 môn học trong một lần, có thể dùng file manifest JSON. Benchmark sẽ khởi tạo runtime dùng chung trong một process để tránh warm-up lại dependency nặng cho từng môn.
+
+Ví dụ file JSON:
+
+```json
+[
+  {
+    "subject_name": "cổ tíchhh",
+    "subject_id": 100,
+    "slot": "tue=14:00-16:00 fri=09:00-11:00",
+    "pdf_path": "benchmark/data/Cổ tích.pdf"
+  },
+  {
+    "subject_name": "lịch sử đảng",
+    "subject_id": 101,
+    "slot": "mon=08:00-10:00 wed=14:00-16:00",
+    "pdf_path": "benchmark/data/lsd1.pdf"
+  }
+]
+```
+
+Các field bắt buộc:
+
+- `subject_name`
+- `subject_id`
+- `pdf_path` hoặc `pdf_url`
+
+Field tùy chọn:
+
+- `slot` hoặc `slots`: chuỗi hoặc mảng slot dạng `day=09:00-11:00`
+- `start_date`
+- `target_grade`
+- `end_date`
+- `session_count`: ép số buổi học cố định
+- `session_weight`: trọng số cho từng buổi khi dùng `session_count`
+- `session_weights`: danh sách weight nếu muốn chỉ định từng buổi riêng lẻ
+
+Chạy từ thư mục `backend`:
+
+```bash
+python -m benchmark.main \
+  --subjects-json "benchmark/data/data_batch.json"
+```
+
+Nếu muốn xóa dữ liệu cũ của từng subject trước khi ingest lại:
+
+```bash
+python -m benchmark.main \
+  --subjects-json "benchmark/data/data_batch.json" \
+  --recreate
+```
+
+## 7. Reset subject cũ
 
 Script `reset_subject.py` làm 3 việc:
 
@@ -92,7 +171,25 @@ Ví dụ output:
 
 Lấy `new_subject_id` này để chạy benchmark tiếp theo.
 
-## 6. Chạy benchmark với `Cổ tích.pdf`
+## 8. Xóa sạch toàn bộ subject data
+
+Nếu không nhớ trong Postgres, Neo4j và Qdrant đang có những môn nào, có thể xóa sạch toàn bộ subject data bằng script sau.
+
+Script sẽ:
+
+- xóa toàn bộ `study_subjects` trong Postgres và để cascade các bảng phụ như `subject_free_slots`, `subject_documents`, `study_plans`, `study_sessions`, `subject_messages`
+- xóa toàn bộ node Neo4j có `subject_id`
+- drop và recreate các collection Qdrant dùng cho ingest: `raw_chunks`, `low-level-retrieval`, `high-level-retrieval`
+
+Chạy từ thư mục `backend`:
+
+```bash
+python -m benchmark.reset_all_subjects --yes
+```
+
+Script yêu cầu `--yes` để tránh xóa nhầm.
+
+## 9. Chạy benchmark với `Cổ tích.pdf`
 
 Chạy từ thư mục `backend` để import package `benchmark` đúng cách:
 
@@ -108,7 +205,7 @@ Set-Location "c:\Users\Home\OneDrive - vnu.edu.vn\Desktop\ComputerVisi\food-dete
 .\benchmark\.venv\Scripts\python.exe -m benchmark.main --subject-ids 40 --pdf-path ".\benchmark\Cổ tích.pdf"
 ```
 
-## 7. Chạy benchmark không ingest lại
+## 10. Chạy benchmark không ingest lại
 
 Nếu subject đã được ingest sẵn và chỉ muốn benchmark planner:
 
@@ -117,7 +214,7 @@ Set-Location "c:\Users\Home\OneDrive - vnu.edu.vn\Desktop\ComputerVisi\food-dete
 .\benchmark\.venv\Scripts\python.exe -m benchmark.main --subject-ids <subject_id> --skip-ingest
 ```
 
-## 8. File output
+## 11. File output
 
 Sau khi chạy xong, benchmark sẽ tạo:
 
@@ -129,7 +226,7 @@ Ví dụ:
 - `output/subject_40_benchmark.json`
 - `output/cổ tích_knowledge_graph.json`
 
-## 9. Log cần chú ý
+## 12. Log cần chú ý
 
 Các prefix log quan trọng:
 
@@ -143,7 +240,7 @@ Nếu thấy benchmark chậm, ưu tiên kiểm tra:
 - số request Together ở bước extraction / profiling.
 - session rỗng có còn gọi LLM hay không.
 
-## 10. Flow chuẩn để benchmark lại `Cổ tích.pdf`
+## 13. Flow chuẩn để benchmark lại `Cổ tích.pdf`
 
 1. Kích hoạt `.venv` của benchmark.
 2. Chạy `reset_subject.py` với subject cũ của `cổ tích`.

@@ -31,17 +31,35 @@ class BenchmarkLLMService:
         from rag_config import CONCEPT_MERGE_SYSTEM_PROMPT, CONCEPT_MERGE_USER_PROMPT
 
         prompt = CONCEPT_MERGE_USER_PROMPT.format(entities=json.dumps(entities, ensure_ascii=False))
-        response = self._call_llm(CONCEPT_MERGE_SYSTEM_PROMPT, prompt)
+        response = self._call_llm(
+            CONCEPT_MERGE_SYSTEM_PROMPT,
+            prompt,
+            operation=f"merge_candidates:{len(entities)}",
+        )
         return self._parse_json_array(response)
 
-    async def _acall_llm(self, system_prompt: str, user_prompt: str) -> str:
+    async def _acall_llm(self, system_prompt: str, user_prompt: str, operation: str = "llm_call") -> str:
         messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
+        started = time.perf_counter()
+        logger.info("[BenchmarkLLMService] Start %s", operation)
         response = await self._ainvoke_with_resilience(messages)
+        logger.info(
+            "[BenchmarkLLMService] Done %s in %.2fs",
+            operation,
+            time.perf_counter() - started,
+        )
         return response.content
 
-    def _call_llm(self, system_prompt: str, user_prompt: str) -> str:
+    def _call_llm(self, system_prompt: str, user_prompt: str, operation: str = "llm_call") -> str:
         messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
+        started = time.perf_counter()
+        logger.info("[BenchmarkLLMService] Start %s", operation)
         response = self._invoke_with_resilience(messages)
+        logger.info(
+            "[BenchmarkLLMService] Done %s in %.2fs",
+            operation,
+            time.perf_counter() - started,
+        )
         if hasattr(response, "generations"):
             return response.generations[0][0].text
         return response.content
@@ -135,6 +153,7 @@ class BenchmarkLLMService:
         response = await self._acall_llm(
             ENTITY_EXTRACTION_SYSTEM_PROMPT,
             ENTITY_EXTRACTION_USER_PROMPT.format(chunk_content=content),
+            operation=f"extract_entities:chars={len(content)}",
         )
         return self._parse_json_array(response)
 
@@ -147,6 +166,7 @@ class BenchmarkLLMService:
                 entities=json.dumps(entities, ensure_ascii=False),
                 chunk_content=content,
             ),
+            operation=f"extract_relations:entities={len(entities)} chars={len(content)}",
         )
         return self._parse_json_array(response)
 

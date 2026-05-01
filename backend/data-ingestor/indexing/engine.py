@@ -193,13 +193,16 @@ class IndexingEngine:
             chunk_texts[chunk["chunk_id"]] = chunk["content"]
 
         async def _extract_one(i, chunk):
+            chunk_started = asyncio.get_running_loop().time()
             chunk_id = chunk["chunk_id"]
             content = chunk["content"]
             subject_id = chunk.get("subject_id", "")
 
             logger.info(f"Extracting chunk {i+1}/{len(chunks)}: {chunk_id}")
+            logger.info(f"  -> requesting entities for {chunk_id} ({len(content)} chars)")
 
             raw_ents = await self.llm.aextract_entities_from_chunk(content)
+            logger.info(f"  -> entity extraction finished for {chunk_id}: {len(raw_ents)} raw entities")
             ents = []
             for e in raw_ents:
                 ents.append({
@@ -212,7 +215,9 @@ class IndexingEngine:
 
             rels = []
             if len(raw_ents) >= 2:
+                logger.info(f"  -> requesting relations for {chunk_id} from {len(raw_ents)} entities")
                 raw_rels = await self.llm.aextract_relations_from_chunk(raw_ents, content)
+                logger.info(f"  -> relation extraction finished for {chunk_id}: {len(raw_rels)} raw relations")
                 for r in raw_rels:
                     rels.append({
                         "source": r.get("source", ""),
@@ -222,8 +227,12 @@ class IndexingEngine:
                         "chunk_id": chunk_id,
                         "subject_id": subject_id
                     })
+            else:
+                logger.info(f"  -> skipping relation extraction for {chunk_id}: fewer than 2 entities")
 
-            logger.info(f"  -> {len(ents)} entities, {len(rels)} relations")
+            logger.info(
+                f"  -> {len(ents)} entities, {len(rels)} relations for {chunk_id} in {asyncio.get_running_loop().time() - chunk_started:.2f}s"
+            )
             return ents, rels
 
         # Fire all chunk extractions concurrently
@@ -252,6 +261,7 @@ class IndexingEngine:
         name_mapping = {}
 
         if len(unique_names) > 1:
+            logger.info(f"Starting dedup merge-candidate detection for {len(unique_names)} unique names")
             merge_groups = self.llm.identify_merge_candidates(
                 [{"name": n} for n in unique_names]
             )
@@ -314,8 +324,14 @@ class IndexingEngine:
 
         # Async profiling task for a single entity
         async def _profile_one(name, meta):
+            started = asyncio.get_running_loop().time()
             description = ""
             if meta["source_parts"]:
+                logger.info(
+                    "Profiling entity '%s' from %s chunks",
+                    name,
+                    len(meta["chunk_ids"]),
+                )
                 try:
                     description = await self.llm._acall_llm(
                         PROFILING_SYSTEM_PROMPT,
@@ -323,12 +339,18 @@ class IndexingEngine:
                             entity_name=name,
                             entity_type=meta["entity_type"],
                             source_chunks="\n\n".join(meta["source_parts"])[:15000]
-                        )
+                        ),
+                        operation=f"profile_entity:{name}",
                     )
                 except Exception as ex:
                     logger.warning(f"Profiling failed for '{name}': {ex}")
                     descs = [ent["description"] for ent in meta["entities"] if ent["description"]]
                     description = descs[0] if descs else ""
+            logger.info(
+                "Finished profiling '%s' in %.2fs",
+                name,
+                asyncio.get_running_loop().time() - started,
+            )
             return name, {
                 "description": description.strip(),
                 "chunk_ids": meta["chunk_ids"],
