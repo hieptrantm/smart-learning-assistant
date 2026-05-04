@@ -28,7 +28,7 @@ class BenchmarkLLMService:
         self._fallback_client: TogetherLLM | None = None
 
     def identify_merge_candidates(self, entities: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        from rag_config import CONCEPT_MERGE_SYSTEM_PROMPT, CONCEPT_MERGE_USER_PROMPT
+        from benchmark.config import CONCEPT_MERGE_SYSTEM_PROMPT, CONCEPT_MERGE_USER_PROMPT
 
         prompt = CONCEPT_MERGE_USER_PROMPT.format(entities=json.dumps(entities, ensure_ascii=False))
         response = self._call_llm(
@@ -148,7 +148,7 @@ class BenchmarkLLMService:
         return self._fallback_client
 
     async def aextract_entities_from_chunk(self, content: str) -> list[dict[str, Any]]:
-        from rag_config import ENTITY_EXTRACTION_SYSTEM_PROMPT, ENTITY_EXTRACTION_USER_PROMPT
+        from benchmark.config import ENTITY_EXTRACTION_SYSTEM_PROMPT, ENTITY_EXTRACTION_USER_PROMPT
 
         response = await self._acall_llm(
             ENTITY_EXTRACTION_SYSTEM_PROMPT,
@@ -158,7 +158,7 @@ class BenchmarkLLMService:
         return self._parse_json_array(response)
 
     async def aextract_relations_from_chunk(self, entities: list[dict[str, Any]], content: str) -> list[dict[str, Any]]:
-        from rag_config import RELATION_EXTRACTION_SYSTEM_PROMPT, RELATION_EXTRACTION_USER_PROMPT
+        from benchmark.config import RELATION_EXTRACTION_SYSTEM_PROMPT, RELATION_EXTRACTION_USER_PROMPT
 
         response = await self._acall_llm(
             RELATION_EXTRACTION_SYSTEM_PROMPT,

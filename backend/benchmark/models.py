@@ -79,7 +79,6 @@ class BenchmarkReport:
     subject: SubjectDescriptor
     ingestion: IngestionBenchmarkResult | None
     tree_based: StrategyBenchmarkResult
-    knowledge_graph: StrategyBenchmarkResult
     vector_db_chunks: StrategyBenchmarkResult
     delta: dict[str, Any]
 

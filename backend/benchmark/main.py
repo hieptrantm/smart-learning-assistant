@@ -108,9 +108,8 @@ async def benchmark_subject(
     session_weights = job.session_weights or session_weights_from_subject(subject)
     raw_graph = await runtime.strategy_runner.fetch_raw_graph(subject.subject_name)
 
-    tree_result, kg_result, vector_result = await asyncio.gather(
+    tree_result, vector_result = await asyncio.gather(
         runtime.strategy_runner.run_tree_strategy(subject, session_weights, raw_graph),
-        runtime.strategy_runner.run_kg_strategy(session_weights, raw_graph),
         runtime.strategy_runner.run_vector_db_chunks_strategy(subject, session_weights, raw_graph),
     )
     
@@ -120,9 +119,8 @@ async def benchmark_subject(
         subject=subject,
         ingestion=ingestion_result,
         tree_based=tree_result,
-        knowledge_graph=kg_result,
         vector_db_chunks=vector_result,
-        delta=summarize_delta(tree_result, kg_result, vector_result),
+        delta=summarize_delta(tree_result, vector_result),
     )
 
 
@@ -172,7 +170,6 @@ async def main() -> None:
 
 def print_summary(report: BenchmarkReport) -> None:
     tree_vs_vector = report.delta["tree_vs_vector_db_chunks"]
-    kg_vs_vector = report.delta["knowledge_graph_vs_vector_db_chunks"]
     print(f"\nSubject {report.subject.subject_id} - {report.subject.subject_name}", flush=True)
     print(
         "  Tree-based      : "
@@ -182,14 +179,6 @@ def print_summary(report: BenchmarkReport) -> None:
         f"rel_activation={report.tree_based.relation_activation_rate:.3f} | "
         f"entity_redundancy={report.tree_based.entity_redundancy_ratio:.3f} | "
         f"tokens_per_entity={report.tree_based.tokens_per_unique_entity:.1f}"
-    , flush=True)
-    print(
-        "  Knowledge graph : "
-        f"{report.knowledge_graph.total_ms:.2f} ms | "
-        f"prereq_order={report.knowledge_graph.prerequisite_ordering_accuracy:.3f} | "
-        f"rel_activation={report.knowledge_graph.relation_activation_rate:.3f} | "
-        f"entity_redundancy={report.knowledge_graph.entity_redundancy_ratio:.3f} | "
-        f"tokens_per_entity={report.knowledge_graph.tokens_per_unique_entity:.1f}"
     , flush=True)
     print(
         "  VectorDB chunks : "
@@ -207,14 +196,7 @@ def print_summary(report: BenchmarkReport) -> None:
         f"redundancy={tree_vs_vector['entity_redundancy_ratio_delta']:.3f} | "
         f"token_eff={tree_vs_vector['tokens_per_unique_entity_delta_ratio']:.3f}"
     , flush=True)
-    print(
-        "  KG vs Vector    : "
-        f"time={kg_vs_vector['time_delta_ratio']:.3f} | "
-        f"prereq={kg_vs_vector['prerequisite_ordering_accuracy_delta']:.3f} | "
-        f"rel={kg_vs_vector['relation_activation_rate_delta']:.3f} | "
-        f"redundancy={kg_vs_vector['entity_redundancy_ratio_delta']:.3f} | "
-        f"token_eff={kg_vs_vector['tokens_per_unique_entity_delta_ratio']:.3f}"
-    , flush=True)
+
 
 
 if __name__ == "__main__":
