@@ -3,6 +3,10 @@
 import { useCallback } from "react";
 import { getTokensInfo, setTokensInfo } from "./token";
 
+const AUTH_SERVICE_URL =
+  process.env.REACT_APP_AUTH_SERVICE_URL || "http://localhost:8001";
+const authUrl = (path) => `${AUTH_SERVICE_URL}${path}`;
+
 async function fetchWithAuth(url, options = {}) {
   let tokens = getTokensInfo();
 
@@ -10,7 +14,7 @@ async function fetchWithAuth(url, options = {}) {
   headers.set("Content-Type", "application/json");
 
   if (tokens?.tokenExpires && tokens.tokenExpires - 60000 <= Date.now()) {
-    const res = await fetch(`/auth/refresh`, {
+    const res = await fetch(authUrl("/auth/refresh"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh_token: tokens.refreshToken }),
@@ -40,7 +44,7 @@ async function fetchWithAuth(url, options = {}) {
 
 export function useAuthLoginService() {
   return useCallback(async (data) => {
-    const res = await fetch(`/auth/login`, {
+    const res = await fetch(authUrl("/auth/login"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -61,7 +65,7 @@ export function useAuthLoginService() {
 
 export function useAuthSignUpService() {
   return useCallback(async (data) => {
-    const res = await fetch(`/auth/login`, {
+    const res = await fetch(authUrl("/auth/login"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -103,7 +107,7 @@ export function useAuthLogoutService() {
 
 export function useAuthConfirmEmailService() {
   return useCallback(async (data) => {
-    const res = await fetch(`/auth/email/confirm`, {
+    const res = await fetch(authUrl("/auth/email/confirm"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -115,7 +119,7 @@ export function useAuthConfirmEmailService() {
 
 export function useAuthConfirmNewEmailService() {
   return useCallback(async (data) => {
-    const res = await fetch(`/auth/email/confirm/new`, {
+    const res = await fetch(authUrl("/auth/email/confirm/new"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -127,7 +131,7 @@ export function useAuthConfirmNewEmailService() {
 
 export function useAuthGoogleLoginService() {
   return useCallback(async (data) => {
-    const res = await fetch(`/auth/google/login`, {
+    const res = await fetch(authUrl("/auth/google/login"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -152,7 +156,7 @@ export function useAuthGoogleLoginService() {
 
 export function useAuthForgotPassword() {
   return useCallback(async (data) => {
-    const res = await fetch(`/auth/forgot-password`, {
+    const res = await fetch(authUrl("/auth/forgot-password"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -164,7 +168,7 @@ export function useAuthForgotPassword() {
 
 export function useAuthSetPasswordService() {
   return useCallback(async (data) => {
-    const res = await fetch(`/auth/set-password`, {
+    const res = await fetch(authUrl("/auth/set-password"), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -176,7 +180,7 @@ export function useAuthSetPasswordService() {
 
 export function useAuthChangePasswordService() {
   return useCallback(async (data) => {
-    const res = await fetch(`/auth/change-password`, {
+    const res = await fetch(authUrl("/auth/change-password"), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -220,7 +224,7 @@ export function useAuthRequestEmailVerificationService() {
 
 export function useTestEmail() {
   return useCallback(async (data) => {
-    const res = await fetch(`/auth/test-email`, {
+    const res = await fetch(authUrl("/auth/test-email"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),

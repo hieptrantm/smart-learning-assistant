@@ -50,6 +50,7 @@ TREE_SUBJECT_ID_SUFFIX = "_tree"
 PLANNER_MAX_RETRIES = 3
 PLANNER_RETRY_DELAY = 3  # seconds
 EMAIL_MAX_RETRIES = 3
+SCHEDULE_TOOL_BATCH_SIZE = int(os.getenv("SCHEDULE_TOOL_BATCH_SIZE", "50"))
 
 # ── Prompts ────────────────────────────────────────────────────
 

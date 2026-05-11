@@ -83,6 +83,7 @@ async def run_full_pipeline(
                 "subject_id": subject.id,
                 "user_id": subject.user_id,
                 "db_url": DATABASE_URL,
+                "checkpoint_chunk_id": checkpoint_node_id,
                 "checkpoint_node_id": checkpoint_node_id,
                 "google_access_token": google_access_token,
                 "google_refresh_token": google_refresh_token,

@@ -26,6 +26,7 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 prompts = get_prompts()
+DEFAULT_TOOL_CALL_LIMIT = int(os.getenv("AGENT_TOOL_CALL_LIMIT", "50"))
 
 class AgentStateDict(TypedDict):
     """Type definition for agent state dictionary"""
@@ -156,7 +157,7 @@ class TutorAgent(BaseLangGraphAgent):
         # Compile the graph
         self.graph = self.workflow.compile(checkpointer=self.checkpointer, store=self.store)
 
-    def _bump_and_maybe_finalize(self, state: AgentStateDict, limit: int = 3) -> None:
+    def _bump_and_maybe_finalize(self, state: AgentStateDict, limit: int = DEFAULT_TOOL_CALL_LIMIT) -> None:
         state["iteration_count"] = state.get("iteration_count", 0) + 1
         if state["iteration_count"] > limit and state.get("current_step") != "final":
             state["current_step"] = "final"
@@ -356,7 +357,7 @@ Kết quả: {last_tool_result.get("result", "")}
         
         finally:
             if state.get("current_step") not in ("end", "final"):
-                self._bump_and_maybe_finalize(state, limit=3)
+                self._bump_and_maybe_finalize(state, limit=DEFAULT_TOOL_CALL_LIMIT)
             
             # End timing and log
             end_time = time.time()

@@ -7,6 +7,10 @@ import "./sign-up.css";
 import GoogleAuth from "../../service/auth/googleAuth";
 import toast from "react-hot-toast";
 
+const AUTH_SERVICE_URL =
+  process.env.REACT_APP_AUTH_SERVICE_URL || "http://localhost:8001";
+const authUrl = (path) => `${AUTH_SERVICE_URL}${path}`;
+
 const SignUp = () => {
   const [formData, setFormData] = useState({
     fullName: "",
@@ -61,7 +65,7 @@ const SignUp = () => {
     }
 
     try {
-      const response = await fetch("/auth/register", {
+      const response = await fetch(authUrl("/auth/register"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

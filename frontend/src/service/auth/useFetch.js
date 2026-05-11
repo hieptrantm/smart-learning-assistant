@@ -3,6 +3,10 @@
 import { useMemo } from "react";
 import { getTokensInfo, setTokensInfo } from "./token";
 
+const AUTH_SERVICE_URL =
+  process.env.REACT_APP_AUTH_SERVICE_URL || "http://localhost:8001";
+const authUrl = (path) => `${AUTH_SERVICE_URL}${path}`;
+
 function useFetch() {
   async function fetchWithAuth(input, init = {}) {
     let tokens = getTokensInfo();
@@ -16,7 +20,7 @@ function useFetch() {
     }
 
     if (tokens?.tokenExpires && tokens.tokenExpires - 60000 <= Date.now()) {
-      const res = await fetch('/auth/refresh', {
+      const res = await fetch(authUrl("/auth/refresh"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

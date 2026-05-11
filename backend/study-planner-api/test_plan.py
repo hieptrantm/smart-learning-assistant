@@ -15,10 +15,10 @@ import asyncio
 
 sessions =  asyncio.run(plan_generator.generate(
     db_url="postgresql://postgres:postgres@localhost:5432/authdb",
-    subject_id=36,
-    subject_name="cổ tích",
-    end_date_str="2026-05-02",
-    checkpoint_node_id=None
+    subject_id=44,
+    subject_name="lịch sử",
+    end_date_str="2026-05-10",
+    checkpoint_chunk_id=None
 ))
 
 for session in sessions:

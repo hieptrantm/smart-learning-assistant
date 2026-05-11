@@ -62,3 +62,8 @@ __pycache__/
 *.json
 
 .mcp
+
+output/
+*.pdf
+
+preview_pdf_pages.py

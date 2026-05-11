@@ -11,6 +11,7 @@ class PlannerStateDict(TypedDict, total=False):
     subject_id: int
     user_id: int
     db_url: str
+    checkpoint_chunk_id: Optional[str]
     checkpoint_node_id: Optional[str]
 
     # Subject data from DB

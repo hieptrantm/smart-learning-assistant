@@ -2,14 +2,16 @@ import json
 import logging
 import os
 from datetime import date, timedelta
+from typing import Optional
 
 from neo4j import AsyncGraphDatabase
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session as DBSession
 
 from app.config import NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD, TREE_SUBJECT_ID_SUFFIX
+from app.models.study_session import StudySession
 from app.models.study_subject import StudySubject
-from app.utils.scheduler import TreeScheduler
+from app.utils.scheduler import ChunkScheduler
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +45,7 @@ class PlanGenerator:
         subject_id: int,
         subject_name: str,
         end_date_str: str,
+        checkpoint_chunk_id: str = None,
         checkpoint_node_id: str = None,
     ) -> list[dict]:
         start_date = date.today()
@@ -53,18 +56,15 @@ class PlanGenerator:
             logger.warning("[PlanGenerator] No sessions from free slots")
             return []
 
-        tree_subject_id = subject_name + self.tree_suffix
-        raw_paths = await self._fetch_tree_paths(tree_subject_id)
-        if not raw_paths:
-            logger.warning(f"[PlanGenerator] No tree data for {tree_subject_id}")
-            return []
-
-        self._save_json(subject_name, raw_paths)
-
-        scheduler = TreeScheduler(raw_paths, llm_client=self.llm_client)
-        num_content = len([n for n in scheduler._nodes.values() if n.node_type != "ROOT"])
+        scheduler = ChunkScheduler(llm_client=self.llm_client)
+        subject_keys = [subject_name, str(subject_id)]
+        num_content = await scheduler.get_schedulable_unit_count(subject_keys)
 
         if num_content == 0:
+            logger.warning(
+                "[PlanGenerator] No Qdrant chunks found for subject keys=%s",
+                subject_keys,
+            )
             return []
 
         if len(sessions) > num_content:
@@ -72,8 +72,57 @@ class PlanGenerator:
             sessions = [sessions[int(i * step)] for i in range(num_content)]
 
         weights = [s["hours"] for s in sessions]
-        results = await scheduler.schedule(weights, checkpoint_node_id)
+        checkpoint_value = self._resolve_checkpoint_chunk_id(
+            db_url=db_url,
+            subject_id=subject_id,
+            checkpoint_chunk_id=checkpoint_chunk_id,
+            checkpoint_node_id=checkpoint_node_id,
+        )
+        results = await scheduler.schedule(
+            session_weights=weights,
+            checkpoint_chunk_id=checkpoint_value,
+            subject_keys=subject_keys,
+        )
+        logger.info(f"[PlanGenerator] Scheduler returned {len(results)} results for {subject_name} (checkpoint={checkpoint_value})")
+        logger.info(f"[PlanGenerator] Sessions: {sessions}")
+        logger.info(f"[PlanGenerator] Results: {[{'checkpoint_chunk_id': r.checkpoint_chunk_id, 'checkpoint_node_id': r.checkpoint_node_id} for r in results]}")
         return self._to_calendar_events(sessions, results, subject_name)
+
+    @staticmethod
+    def _resolve_checkpoint_chunk_id(
+        db_url: str,
+        subject_id: int,
+        checkpoint_chunk_id: Optional[str],
+        checkpoint_node_id: Optional[str],
+    ) -> Optional[str]:
+        explicit_checkpoint = checkpoint_chunk_id or checkpoint_node_id
+        if explicit_checkpoint:
+            return explicit_checkpoint
+
+        engine = create_engine(db_url, pool_pre_ping=True)
+        with DBSession(engine) as db:
+            latest_failed_or_not_started = (
+                db.query(StudySession)
+                .filter(
+                    StudySession.subject_id == subject_id,
+                    StudySession.learning_status.in_(["not_started", "failed"]),
+                )
+                .order_by(StudySession.session_date.desc(), StudySession.start_time.desc())
+                .first()
+            )
+
+            if not latest_failed_or_not_started:
+                return None
+
+            checkpoint_value = latest_failed_or_not_started.checkpoint_node_id
+            if not checkpoint_value or checkpoint_value == "root":
+                return None
+
+            logger.info(
+                "[PlanGenerator] Resolved checkpoint_chunk_id from latest non-completed session: %s",
+                checkpoint_value,
+            )
+            return checkpoint_value
 
     def _build_session_slots(self, db_url, subject_id, start_date, end_date):
         engine = create_engine(db_url, pool_pre_ping=True)
@@ -253,7 +302,8 @@ class PlanGenerator:
                 "location": "Online",
                 "description": description,
                 "aggregated_content": result.aggregate_text if result.aggregate_text else description,
-                "checkpoint_node_id": result.checkpoint_node_id if result.checkpoint_node_id else "root",
+                "checkpoint_chunk_id": result.checkpoint_chunk_id if result.checkpoint_chunk_id else result.checkpoint_node_id if result.checkpoint_node_id else "root",
+                "checkpoint_node_id": result.checkpoint_chunk_id if result.checkpoint_chunk_id else result.checkpoint_node_id if result.checkpoint_node_id else "root",
                 "start": {
                     "dateTime": f"{d}T{st}:00+07:00",
                     "timeZone": "Asia/Ho_Chi_Minh",

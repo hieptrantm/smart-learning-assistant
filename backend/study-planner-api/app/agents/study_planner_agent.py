@@ -19,6 +19,7 @@ from app.config import (
     EMAIL_BODY_TEMPLATE,
     EMAIL_SESSION_ROW,
     EMAIL_MAX_RETRIES,
+    SCHEDULE_TOOL_BATCH_SIZE,
 )
 from app.models.study_subject import StudySubject
 from app.utils.plan_generator import PlanGenerator
@@ -121,6 +122,7 @@ class StudyPlannerAgent:
                 "plan_status": subject.plan_status,
                 "target_grade": float(subject.target_grade or 7),
                 "end_date": subject.end_date.isoformat() if subject.end_date else "",
+                "checkpoint_chunk_id": state.get("checkpoint_chunk_id") or state.get("checkpoint_node_id"),
                 "checkpoint_node_id": state.get("checkpoint_node_id"),
             }
 
@@ -390,6 +392,7 @@ class StudyPlannerAgent:
                 subject_id=subject["id"],
                 subject_name=subject.get("name", ""),
                 end_date_str=subject.get("end_date", ""),
+                checkpoint_chunk_id=subject.get("checkpoint_chunk_id", None),
                 checkpoint_node_id=subject.get("checkpoint_node_id", None),
             )
             logger.info(f"[planner] Plan generation completed with {len(plan)} events")
@@ -534,7 +537,7 @@ class StudyPlannerAgent:
                     session = StudySession(
                         plan_id=plan_record.id,
                         subject_id=subject["id"],
-                        checkpoint_node_id=ev.get("checkpoint_node_id", None),
+                        checkpoint_node_id=ev.get("checkpoint_chunk_id") or ev.get("checkpoint_node_id", None),
                         session_date=date.fromisoformat(session_date) if session_date else None,
                         start_time=start_time,
                         end_time=end_time,
@@ -560,51 +563,61 @@ class StudyPlannerAgent:
         tool_calls = list(state.get("tool_calls", []))
         tool_results = list(state.get("tool_results", []))
 
-        # Find first pending call
-        pending = None
-        pending_idx = -1
-        for i, tc in enumerate(tool_calls):
-            if tc.get("status") == "pending":
-                pending = tc
-                pending_idx = i
-                break
+        pending_calls = [
+            (index, tool_call)
+            for index, tool_call in enumerate(tool_calls)
+            if tool_call.get("status") == "pending"
+        ]
 
-        if not pending:
+        if not pending_calls:
             return {"current_step": "observation", "previous_step": "tools"}
 
-        tool_name = pending["tool_name"]
-        params = pending["parameters"]
-        logger.info(f"[tools] Executing: {tool_name}")
+        first_tool_name = pending_calls[0][1]["tool_name"]
+        calls_to_run = (
+            pending_calls[:SCHEDULE_TOOL_BATCH_SIZE]
+            if first_tool_name == "build_one_schedule"
+            else pending_calls[:1]
+        )
 
-        # Find matching MCP tool
-        result = None
-        for tool in self.tools:
-            if tool.name == tool_name:
-                try:
-                    raw = await tool.ainvoke(params)
-                    result = json.loads(raw) if isinstance(raw, str) else raw
-                except Exception as e:
-                    logger.error(f"[tools] {tool_name} error: {e}")
-                    result = {"success": False, "content": "", "error": str(e)}
-                break
+        logger.info(
+            "[tools] Executing %s pending call(s), first tool=%s",
+            len(calls_to_run),
+            first_tool_name,
+        )
 
-        if result is None:
-            result = {"success": False, "content": "", "error": f"Tool '{tool_name}' not found"}
+        last_tool_name = first_tool_name
+        last_result = None
+        for pending_idx, pending in calls_to_run:
+            tool_name = pending["tool_name"]
+            params = pending["parameters"]
+            last_tool_name = tool_name
+            logger.info(f"[tools] Executing: {tool_name}")
 
-        # Mark call as done
-        tool_calls[pending_idx]["status"] = "done"
+            result = None
+            for tool in self.tools:
+                if tool.name == tool_name:
+                    try:
+                        raw = await tool.ainvoke(params)
+                        result = json.loads(raw) if isinstance(raw, str) else raw
+                    except Exception as e:
+                        logger.error(f"[tools] {tool_name} error: {e}")
+                        result = {"success": False, "content": "", "error": str(e)}
+                    break
 
-        tool_results.append({
-            "tool_name": tool_name,
-            "success": result.get("success", False),
-            "content": result.get("content", ""),
-            "error": result.get("error"),
-            "event_id": result.get("event_id", ""),
-        })
+            if result is None:
+                result = {"success": False, "content": "", "error": f"Tool '{tool_name}' not found"}
 
-        # For send_email with retry: if failed and retries left, mark as pending again
-        email_retry = state.get("email_retry_count", 0)
-        if tool_name == "send_email" and result.get("success"):
+            tool_calls[pending_idx]["status"] = "done"
+            tool_results.append({
+                "tool_name": tool_name,
+                "success": result.get("success", False),
+                "content": result.get("content", ""),
+                "error": result.get("error"),
+                "event_id": result.get("event_id", ""),
+            })
+            last_result = result
+
+        if last_tool_name == "send_email" and last_result and last_result.get("success"):
             return {
                 "tool_calls": tool_calls,
                 "tool_results": tool_results,
