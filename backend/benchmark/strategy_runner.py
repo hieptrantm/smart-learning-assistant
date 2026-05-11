@@ -511,13 +511,10 @@ def _pair_delta(left_result: StrategyBenchmarkResult, right_result: StrategyBenc
 
 def summarize_delta(
     tree_result: StrategyBenchmarkResult,
-    kg_result: StrategyBenchmarkResult,
     vector_result: StrategyBenchmarkResult,
 ) -> dict[str, dict[str, float]]:
     return {
-        "tree_vs_knowledge_graph": _pair_delta(tree_result, kg_result),
         "tree_vs_vector_db_chunks": _pair_delta(tree_result, vector_result),
-        "knowledge_graph_vs_vector_db_chunks": _pair_delta(kg_result, vector_result),
     }
 
 

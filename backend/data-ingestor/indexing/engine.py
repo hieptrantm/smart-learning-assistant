@@ -32,6 +32,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 
+PROFILE_ENTITY_CONCURRENCY = max(1, int(os.getenv("PROFILE_ENTITY_CONCURRENCY", "4")))
+
+
 class IndexingEngine:
     """
     LightRAG Indexing Pipeline.
@@ -322,30 +325,34 @@ class IndexingEngine:
                 "source_parts": source_parts,
             }
 
+        semaphore = asyncio.Semaphore(PROFILE_ENTITY_CONCURRENCY)
+
         # Async profiling task for a single entity
         async def _profile_one(name, meta):
             started = asyncio.get_running_loop().time()
             description = ""
-            if meta["source_parts"]:
-                logger.info(
-                    "Profiling entity '%s' from %s chunks",
-                    name,
-                    len(meta["chunk_ids"]),
-                )
-                try:
-                    description = await self.llm._acall_llm(
-                        PROFILING_SYSTEM_PROMPT,
-                        PROFILING_USER_PROMPT.format(
-                            entity_name=name,
-                            entity_type=meta["entity_type"],
-                            source_chunks="\n\n".join(meta["source_parts"])[:15000]
-                        ),
-                        operation=f"profile_entity:{name}",
+            async with semaphore:
+                if meta["source_parts"]:
+                    logger.info(
+                        "Profiling entity '%s' from %s chunks (concurrency=%s)",
+                        name,
+                        len(meta["chunk_ids"]),
+                        PROFILE_ENTITY_CONCURRENCY,
                     )
-                except Exception as ex:
-                    logger.warning(f"Profiling failed for '{name}': {ex}")
-                    descs = [ent["description"] for ent in meta["entities"] if ent["description"]]
-                    description = descs[0] if descs else ""
+                    try:
+                        description = await self.llm._acall_llm(
+                            PROFILING_SYSTEM_PROMPT,
+                            PROFILING_USER_PROMPT.format(
+                                entity_name=name,
+                                entity_type=meta["entity_type"],
+                                source_chunks="\n\n".join(meta["source_parts"])[:15000]
+                            ),
+                            operation=f"profile_entity:{name}",
+                        )
+                    except Exception as ex:
+                        logger.warning(f"Profiling failed for '{name}': {ex}")
+                        descs = [ent["description"] for ent in meta["entities"] if ent["description"]]
+                        description = descs[0] if descs else ""
             logger.info(
                 "Finished profiling '%s' in %.2fs",
                 name,
@@ -360,6 +367,11 @@ class IndexingEngine:
             }
 
         # Fire all profiling calls concurrently
+        logger.info(
+            "Profiling %s entities with concurrency limit=%s",
+            len(entity_metas),
+            PROFILE_ENTITY_CONCURRENCY,
+        )
         tasks = [_profile_one(name, meta) for name, meta in entity_metas.items()]
         results = await asyncio.gather(*tasks)
 
