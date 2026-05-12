@@ -81,6 +81,7 @@ class StudySessionOut(BaseModel):
     content: Optional[str] = None
     status: str
     learning_status: str
+    checkpoint_node_id: Optional[str] = None
     score: Optional[float] = None
     calendar_event_id: Optional[str] = None
 

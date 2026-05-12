@@ -102,7 +102,7 @@ def extract_context_of_figure(data: dict, page: dict, page_index: int,
 
 # Test function
 if __name__ == "__main__":
-    file_path = "ingestor/Lịch sử.pdf"
+    file_path = "ingestor/ktvm1.pdf"
     
     data = parse_pdf_to_json(file_path)
     with open("parsed_output.json", "w", encoding="utf-8") as f:

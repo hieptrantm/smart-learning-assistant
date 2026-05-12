@@ -163,6 +163,7 @@ def get_plan(
                 "content": s.content,
                 "status": s.status,
                 "learning_status": s.learning_status,
+                "checkpoint_node_id": s.checkpoint_node_id,
                 "score": float(s.score) if s.score is not None else None,
                 "calendar_event_id": s.calendar_event_id,
             }

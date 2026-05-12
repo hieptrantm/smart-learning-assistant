@@ -36,6 +36,8 @@ class ChatRequest(BaseModel):
     question: str = "hello"
     user_id: int = 1
     subject_id: int = 1
+    current_session_id: Optional[int] = None
+    current_checkpoint_node_id: Optional[str] = None
     stream: bool = True
     lecture_title: str = ""
     lecture_content: str = ""

@@ -57,6 +57,7 @@ class TutorAgent(BaseLangGraphAgent):
         together_llm: BaseLLM = None,
         tools: Optional[List[BaseTool]] = None,
         subject_id: Optional[str] = None,
+        chunk_ids_filter: Optional[List[str]] = None,
         lecture_title: Optional[str] = "",
         lecture_content: Optional[str] = "",
         history_summarization_engine: Optional[HistorySummarizationEngine] = None,
@@ -85,6 +86,7 @@ class TutorAgent(BaseLangGraphAgent):
         self.token_queues: Dict[str, asyncio.Queue] = {}  # Queue for streaming tokens
         self.chat_history = chat_history or []  # Store full chat history for context
         self.subject_id = subject_id
+        self.chunk_ids_filter = chunk_ids_filter or []
         self.lecture_title = lecture_title or ""
         self.lecture_content = lecture_content or ""
         logger.debug(f"Chat history initialized with {len(self.chat_history)} messages")
@@ -98,6 +100,7 @@ class TutorAgent(BaseLangGraphAgent):
         tools: Optional[List[BaseTool]] = None,
         history_summarization_engine: Optional[HistorySummarizationEngine] = None,
         subject_id: Optional[str] = None,
+        chunk_ids_filter: Optional[List[str]] = None,
         lecture_title: Optional[str] = "",
         lecture_content: Optional[str] = "",
         system_prompt: str = prompts['system_normal_prompt'],
@@ -120,6 +123,7 @@ class TutorAgent(BaseLangGraphAgent):
             callback_text_generate=callback_text_generate,
             chat_history=chat_history,
             subject_id=subject_id,
+            chunk_ids_filter=chunk_ids_filter,
             lecture_title=lecture_title,
             lecture_content=lecture_content,
             *args,
@@ -412,6 +416,20 @@ Kết quả: {last_tool_result.get("result", "")}
             last_tool_name = last_tool_call["tool_name"]
             last_parameters = last_tool_call["parameters"]
             last_tool_call_id = last_tool_call["tool_call_id"]
+
+            if last_tool_name == "retrieve":
+                last_parameters = dict(last_parameters or {})
+                if self.subject_id is not None:
+                    last_parameters["subject_id"] = str(self.subject_id)
+                if self.chunk_ids_filter:
+                    last_parameters["chunk_ids"] = self.chunk_ids_filter
+                logger.info(
+                    "[TOOL NODE][%s] Applied retrieve filters: subject_id=%s, chunk_count=%s",
+                    session_id,
+                    last_parameters.get("subject_id"),
+                    len(last_parameters.get("chunk_ids", [])),
+                )
+
             logger.info(f"[TOOL NODE] Last tool: {last_tool_name}, params: {last_parameters}")
             logger.info(f"[{session_id}] Executing tool: {last_tool_name}")
 

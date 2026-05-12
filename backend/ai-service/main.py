@@ -21,7 +21,7 @@ from langchain_core.messages import (
 
 from llm.openai_llm import OpenAILLM
 from app_models.requests import Message, ChatRequest, ChatResponse, Question
-from db.db_utils import add_message, get_messages
+from db.db_utils import add_message, get_messages, get_session_chunk_window
 from llm_chatbot.normal_agent import TutorAgent
 from history_summarization.engine import HistorySummarizationEngine
 from config import get_prompts
@@ -124,6 +124,31 @@ async def assistant_chat_completions(request: ChatRequest):
     question = request.question
     subject_id = request.subject_id
     logger.info(f"Received chat request - subject_id: {subject_id}, question: '{question[:120]}'")
+
+    chunk_window = {
+        "current_session_id": request.current_session_id,
+        "current_checkpoint": None,
+        "previous_passed_checkpoint": None,
+        "chunk_ids": [],
+    }
+    try:
+        if request.subject_id:
+            chunk_window = get_session_chunk_window(
+                subject_id=request.subject_id,
+                current_session_id=request.current_session_id,
+                current_checkpoint_node_id=request.current_checkpoint_node_id,
+            )
+            logger.info(
+                "Resolved chunk window | subject_id=%s | session_id=%s | requested_checkpoint=%s | previous=%s | current=%s | chunk_count=%s",
+                request.subject_id,
+                chunk_window.get("current_session_id"),
+                request.current_checkpoint_node_id,
+                chunk_window.get("previous_passed_checkpoint"),
+                chunk_window.get("current_checkpoint"),
+                len(chunk_window.get("chunk_ids") or []),
+            )
+    except Exception as e:
+        logger.warning(f"Failed to resolve chunk window for subject_id={request.subject_id}: {e}")
     
     if request.user_id and request.subject_id:
         history_messages = get_messages(subject_id=request.subject_id)
@@ -150,6 +175,7 @@ async def assistant_chat_completions(request: ChatRequest):
                     tools=tools,
                     history_summarization_engine=history_summarization_engine,
                     subject_id=subject_id,
+                    chunk_ids_filter=chunk_window.get("chunk_ids", []),
                     lecture_title=request.lecture_title,
                     lecture_content=request.lecture_content,
                 )
@@ -308,6 +334,7 @@ async def assistant_chat_completions(request: ChatRequest):
         agent = await TutorAgent.create(
             llm=llm_client,
             tools=tools,
+            chunk_ids_filter=chunk_window.get("chunk_ids", []),
         )
 
         full_reply = ""

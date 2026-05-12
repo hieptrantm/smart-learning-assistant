@@ -1,5 +1,6 @@
 import os
-from typing import Any, Dict, List, Sequence
+import re
+from typing import Any, Dict, List, Optional, Sequence
 import psycopg2
 from psycopg2.extras import RealDictCursor, execute_values
 from dotenv import load_dotenv
@@ -13,6 +14,8 @@ DB_NAME = os.getenv("POSTGRES_DB", "")
 DB_HOST = os.getenv("POSTGRES_HOST", "")
 DB_PORT = os.getenv("POSTGRES_PORT", "")
 DB_SCHEMA = os.getenv("POSTGRES_SCHEMA", "")
+
+CHUNK_ID_PATTERN = re.compile(r"^(.*?_chunk_)(\d+)$", re.IGNORECASE)
 
 def get_connection():
     return psycopg2.connect(
@@ -151,6 +154,164 @@ def insert_sft_data(rows: List[Dict[str, Any]]):
     cur.close()
     conn.close()
     return inserted
+
+
+def _parse_chunk_checkpoint(checkpoint_id: Optional[str]) -> Optional[Dict[str, Any]]:
+    if not checkpoint_id:
+        return None
+    raw = str(checkpoint_id).strip()
+    match = CHUNK_ID_PATTERN.match(raw)
+    if not match:
+        return None
+    prefix, number_str = match.groups()
+    return {
+        "prefix": prefix,
+        "number": int(number_str),
+        "width": len(number_str),
+    }
+
+
+def _build_chunk_window(current_checkpoint: str, previous_checkpoint: Optional[str]) -> List[str]:
+    current_parsed = _parse_chunk_checkpoint(current_checkpoint)
+    if not current_parsed:
+        return [current_checkpoint]
+
+    start_num = 1
+    width = max(2, current_parsed["width"])
+    previous_parsed = _parse_chunk_checkpoint(previous_checkpoint)
+    if previous_parsed and previous_parsed["prefix"] == current_parsed["prefix"]:
+        start_num = previous_parsed["number"] + 1
+        width = max(width, previous_parsed["width"])
+
+    if start_num > current_parsed["number"]:
+        start_num = current_parsed["number"]
+
+    prefix = current_parsed["prefix"]
+    return [f"{prefix}{idx:0{width}d}" for idx in range(start_num, current_parsed["number"] + 1)]
+
+
+def get_session_chunk_window(
+    subject_id: int,
+    current_session_id: Optional[int] = None,
+    current_checkpoint_node_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Resolve chunk window for Q&A retrieval:
+    - End at current session checkpoint_node_id
+    - Start right after nearest previous passed session checkpoint_node_id
+    - If no previous passed session, start from *_chunk_01
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        current_session = None
+        if current_checkpoint_node_id:
+            cur.execute(
+                """
+                SELECT id, checkpoint_node_id, session_date, start_time
+                FROM study_sessions
+                WHERE subject_id = %s AND checkpoint_node_id = %s
+                ORDER BY session_date ASC NULLS LAST, start_time ASC NULLS LAST, id ASC
+                LIMIT 1
+                """,
+                (subject_id, current_checkpoint_node_id),
+            )
+            current_session = cur.fetchone()
+        elif current_session_id is not None:
+            cur.execute(
+                """
+                SELECT id, checkpoint_node_id, session_date, start_time
+                FROM study_sessions
+                WHERE subject_id = %s AND id = %s
+                LIMIT 1
+                """,
+                (subject_id, current_session_id),
+            )
+            current_session = cur.fetchone()
+        else:
+            # Fallback when FE does not pass current session id.
+            cur.execute(
+                """
+                                SELECT id, checkpoint_node_id, session_date, start_time
+                FROM study_sessions
+                WHERE subject_id = %s
+                  AND checkpoint_node_id IS NOT NULL
+                ORDER BY
+                  CASE WHEN learning_status IN ('not_started', 'in_progress') THEN 0 ELSE 1 END,
+                  session_date ASC NULLS LAST,
+                  start_time ASC NULLS LAST,
+                  id ASC
+                LIMIT 1
+                """,
+                (subject_id,),
+            )
+            current_session = cur.fetchone()
+
+        if not current_session or not current_session.get("checkpoint_node_id"):
+            return {
+                "current_session_id": current_session_id,
+                "current_checkpoint": current_checkpoint_node_id,
+                "previous_passed_checkpoint": None,
+                "chunk_ids": [],
+            }
+
+        resolved_session_id = current_session["id"]
+        current_checkpoint = current_session["checkpoint_node_id"]
+        current_session_date = current_session.get("session_date")
+        current_start_time = current_session.get("start_time")
+
+        if current_session_date is not None and current_start_time is not None:
+            cur.execute(
+                """
+                SELECT checkpoint_node_id
+                FROM study_sessions
+                WHERE subject_id = %s
+                  AND learning_status = 'passed'
+                  AND checkpoint_node_id IS NOT NULL
+                  AND (
+                    session_date < %s
+                    OR (session_date = %s AND start_time < %s)
+                    OR (session_date = %s AND start_time = %s AND id < %s)
+                  )
+                ORDER BY session_date DESC NULLS LAST, start_time DESC NULLS LAST, id DESC
+                LIMIT 1
+                """,
+                (
+                    subject_id,
+                    current_session_date,
+                    current_session_date,
+                    current_start_time,
+                    current_session_date,
+                    current_start_time,
+                    resolved_session_id,
+                ),
+            )
+        else:
+            cur.execute(
+                """
+                SELECT checkpoint_node_id
+                FROM study_sessions
+                WHERE subject_id = %s
+                  AND id < %s
+                  AND learning_status = 'passed'
+                  AND checkpoint_node_id IS NOT NULL
+                ORDER BY id DESC
+                LIMIT 1
+                """,
+                (subject_id, resolved_session_id),
+            )
+        previous_session = cur.fetchone()
+        previous_checkpoint = previous_session["checkpoint_node_id"] if previous_session else None
+
+        return {
+            "current_session_id": resolved_session_id,
+            "current_checkpoint": current_checkpoint,
+            "previous_passed_checkpoint": previous_checkpoint,
+            "chunk_ids": _build_chunk_window(current_checkpoint, previous_checkpoint),
+        }
+    finally:
+        cur.close()
+        conn.close()
 
 # Test connection
 if __name__ == "__main__":

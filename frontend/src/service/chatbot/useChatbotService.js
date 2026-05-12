@@ -14,7 +14,7 @@ export function useChatbotService() {
   const fetchWithAuth = useFetch();
 
   // Stream chat completions from ai-service (SSE)
-  const streamChat = useCallback(async ({ question, userId, subjectId, lectureTitle, lectureContent, onToken, onToolResult, onThinking, onError, onDone }) => {
+  const streamChat = useCallback(async ({ question, userId, subjectId, currentSessionId, currentCheckpointNodeId, lectureTitle, lectureContent, onToken, onToolResult, onThinking, onError, onDone }) => {
     // console.log("Starting chat stream with question:", question, "userId:", userId, "subjectId:", subjectId);
     const res = await fetchWithAuth(aiUrl("/v1/chat/completions/stream"), {
       method: "POST",
@@ -22,6 +22,8 @@ export function useChatbotService() {
         question,
         user_id: userId,
         subject_id: subjectId,
+        current_session_id: currentSessionId ?? null,
+        current_checkpoint_node_id: currentCheckpointNodeId || "",
         stream: true,
         lecture_title: lectureTitle || "",
         lecture_content: lectureContent || "",

@@ -297,10 +297,22 @@ const Chatbot = ({ user }) => {
     ]);
 
     try {
+      console.log("streamChat params:", {
+        question,
+        userId: user.id,
+        subjectId: selectedSubjectId,
+        currentSessionId: selectedPlanSession?.id,
+        currentCheckpointNodeId: selectedPlanSession?.checkpoint_node_id,
+        lectureTitle: selectedPlanSession?.title || "",
+        lectureContent: selectedPlanSession?.content || "",
+      });
+
       await streamChat({
         question,
         userId: user.id,
         subjectId: selectedSubjectId,
+        currentSessionId: selectedPlanSession?.id,
+        currentCheckpointNodeId: selectedPlanSession?.checkpoint_node_id,
         lectureTitle: selectedPlanSession?.title || "",
         lectureContent: selectedPlanSession?.content || "",
         onToken: (token) => {

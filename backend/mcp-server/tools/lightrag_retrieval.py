@@ -66,7 +66,8 @@ class LightRAGRetrieval:
     async def retrieve(
         self, 
         subject_id: Annotated[str, Field(description="The subject id of the document supplied")],                    
-        query: Annotated[str, Field(description="The query to retrieve document")] = None
+        query: Annotated[str, Field(description="The query to retrieve document")] = None,
+        chunk_ids: Annotated[Optional[List[str]], Field(description="Optional allowed chunk ids for session-scoped retrieval")] = None,
     ) -> Dict[str, Any]:
         """
         Full LightRAG dual-level retrieval
@@ -95,6 +96,11 @@ class LightRAGRetrieval:
                 top_k=top_k,
                 filter_payload=filter_payload,
             )
+            if chunk_ids:
+                low_docs["docs"] = [
+                    d for d in low_docs["docs"]
+                    if self._doc_matches_chunk_filter(d, chunk_ids)
+                ]
             entity_names = [
                 d["metadata"]["entity_name"]
                 for d in low_docs["docs"]
@@ -111,6 +117,11 @@ class LightRAGRetrieval:
                 top_k=top_k,
                 filter_payload=filter_payload,
             )
+            if chunk_ids:
+                high_docs["docs"] = [
+                    d for d in high_docs["docs"]
+                    if self._doc_matches_chunk_filter(d, chunk_ids)
+                ]
             relation_entities = set()
             for d in high_docs["docs"]:
                 for key in ("source_entity", "target_entity"):
@@ -124,30 +135,60 @@ class LightRAGRetrieval:
                 graph_ctx = await self.graphdb.get_one_hop(all_names, subject_id)
 
             # Step 5: Collect source chunk_ids
-            chunk_ids = set()
+            source_chunk_ids = set()
             for d in low_docs["docs"]:
-                chunk_ids.update(d["metadata"].get("chunk_ids", []))
+                source_chunk_ids.update(d["metadata"].get("chunk_ids", []))
             for d in high_docs["docs"]:
                 cid = d["metadata"].get("chunk_id")
                 if cid:
-                    chunk_ids.add(cid)
+                    source_chunk_ids.add(cid)
                     
-            logger.info(f"Retrieved {len(low_docs['docs'])} low-level docs, {len(high_docs['docs'])} high-level docs, graph expansion with {len(graph_ctx['entities'])} entities and {len(graph_ctx['relations'])} relations, total chunk_ids: {len(chunk_ids)}")
+            logger.info(f"Retrieved {len(low_docs['docs'])} low-level docs, {len(high_docs['docs'])} high-level docs, graph expansion with {len(graph_ctx['entities'])} entities and {len(graph_ctx['relations'])} relations, total chunk_ids: {len(source_chunk_ids)}")
             logger.debug(f"Low-level docs: {[d['metadata'].get('entity_name') for d in low_docs['docs']]}") 
             
             # Step 6: Merge context
-            return json.dumps(self._merge_context(
-                low_docs["docs"], high_docs["docs"], graph_ctx, list(chunk_ids)
-            ), ensure_ascii=False, indent=2)
+            merged_context = self._merge_context(
+                query,
+                low_docs["docs"],
+                high_docs["docs"],
+                graph_ctx,
+                list(source_chunk_ids),
+            )
+
+            return json.dumps({
+                "success": True,
+                "tool_name": "lightRAG_retrieval",
+                "content": "Tool lightRAG retrieval successful. The result has been displayed.",
+                "query": query,
+                "results_count": merged_context.get("results_count", 0),
+                "tool_result": merged_context.get("tool_result", ""),
+            }, ensure_ascii=False, indent=2)
         except Exception as e:
             logger.error(f"Error in LightRAG retrieval: {e}")
-            return {
-                "context": "",
-                "low_level_docs": [],
-                "high_level_docs": [],
-                "graph_expansion": {"entities": [], "relations": []},
-                "chunk_ids": [],
-            }
+            return json.dumps({
+                "success": False,
+                "tool_name": "lightRAG_retrieval",
+                "content": "",
+                "query": query,
+                "results_count": 0,
+                "tool_result": "",
+            }, ensure_ascii=False, indent=2)
+
+    def _doc_matches_chunk_filter(self, doc: Dict[str, Any], allowed_chunk_ids: List[str]) -> bool:
+        metadata = doc.get("metadata", {}) or {}
+        allowed = set(allowed_chunk_ids or [])
+        if not allowed:
+            return True
+
+        direct_chunk_id = metadata.get("chunk_id")
+        if direct_chunk_id and direct_chunk_id in allowed:
+            return True
+
+        chunk_id_list = metadata.get("chunk_ids") or []
+        if isinstance(chunk_id_list, list) and any(cid in allowed for cid in chunk_id_list):
+            return True
+
+        return False
 
     # =========================================================================
     # Keyword extraction (LLM)

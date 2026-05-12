@@ -43,6 +43,7 @@ class IngestResult:
     formulas_extracted: int = 0
     raw_chunks_created: int = 0
     chunks: list[dict] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
 def normalize_class_name(data: dict) -> dict:
     for page in data.get("pages", []):
@@ -56,7 +57,7 @@ def normalize_class_name(data: dict) -> dict:
 
 class ChunkingEngine:
     def __init__(self, vlm_service=None):
-        self.vlm_service = vlm_service or VLMService(os.getenv("TOGETHER_API_KEY"), os.getenv("VLM_MODEL_ID"))
+        self.vlm_service = vlm_service or VLMService()
     
     def run_pipeline(
         self,
@@ -120,7 +121,10 @@ class ChunkingEngine:
                     context = extract_context_of_figure(data, page, page_idx, box_idx, num_boxes=3)
                     logger.info(f"Context for visual box p{page_idx} b{box_idx}: {context}")
                     encoded = self.vlm_service.get_b64_image(file_path, page_idx, box)
-                    logger.info(f"Encoded visual box p{page_idx} b{box_idx}: {encoded[:30]}...")  # Log start of base64 string
+                    if encoded:
+                        logger.info(f"Encoded visual box p{page_idx} b{box_idx}: {encoded[:30]}...")  # Log start of base64 string
+                    else:
+                        logger.warning(f"No encoded image generated for visual box p{page_idx} b{box_idx}")
                     if encoded:
                         box_type = "FIGURE" if bc == "picture" else "FORMULA"
                         try:
