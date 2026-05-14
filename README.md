@@ -130,7 +130,7 @@ Auth Service   Ingest Data    Study Planner   AI Assistant
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/<your-username>/smart-learning-assistant.git
+git clone https://github.com/hieptrantm/smart-learning-assistant.git
 cd smart-learning-assistant
 ```
 
