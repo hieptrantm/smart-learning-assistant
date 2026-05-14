@@ -65,5 +65,6 @@ __pycache__/
 
 output/
 *.pdf
+*.txt
 
 preview_pdf_pages.py
