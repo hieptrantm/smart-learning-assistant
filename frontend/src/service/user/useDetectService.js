@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { getTokensInfo, setTokensInfo } from "../auth/token";
 
 const AUTH_SERVICE_URL =
-  process.env.REACT_APP_AUTH_SERVICE_URL || "http://localhost:8001";
+  process.env.REACT_APP_AUTH_SERVICE_URL || "http://localhost:8005";
 const authUrl = (path) => `${AUTH_SERVICE_URL}${path}`;
 
 async function fetchWithAuth(url, options = {}) {
@@ -44,7 +44,7 @@ async function fetchWithAuth(url, options = {}) {
 
 export function useGetDetectDetail() {
   return useCallback(async (detectId) => {
-    const res = await fetchWithAuth(`/detect/detect-detail/${detectId}`, {
+    const res = await fetchWithAuth(authUrl(`/detect/detect-detail/${detectId}`), {
       method: "GET",
     });
 
@@ -60,7 +60,7 @@ export function useGetDetectDetail() {
 
 export function useCreateDetect() {
     return useCallback(async (data) => {
-        const res = await fetchWithAuth(`/detect/detect-detail`, {
+        const res = await fetchWithAuth(authUrl(`/detect/detect-detail`), {
             method: "POST",
             body: JSON.stringify(data),
         });
@@ -74,7 +74,7 @@ export function useCreateDetect() {
 
 export function useGetUserDetects() {
     return useCallback(async (userId, offset = 0, limit = 10) => {
-        const res = await fetchWithAuth(`/detect/user/${userId}?offset=${offset}&limit=${limit}`, {
+        const res = await fetchWithAuth(authUrl(`/detect/user/${userId}?offset=${offset}&limit=${limit}`), {
             method: "GET",
         });
         if (!res.ok) {
@@ -87,7 +87,7 @@ export function useGetUserDetects() {
 
 export function useGetDetectsByDate() {
     return useCallback(async (userId, startDate = null, endDate = null, offset = 0, limit = 10) => {
-        let url = `/detect/user/${userId}/by-date?offset=${offset}&limit=${limit}`;
+        let url = authUrl(`/detect/user/${userId}/by-date?offset=${offset}&limit=${limit}`);
         
         if (startDate) {
             url += `&start_date=${startDate}`;

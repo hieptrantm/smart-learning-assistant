@@ -13,6 +13,10 @@ import {
 } from "./token.js";
 import { setGoogleToken } from "./googleToken.js";
 
+const AUTH_SERVICE_URL =
+  process.env.REACT_APP_AUTH_SERVICE_URL || "http://localhost:8005";
+const authUrl = (path) => `${AUTH_SERVICE_URL}${path}`;
+
 // enum HTTP_CODES_ENUM {
 //   OK = 200,
 //   CREATED = 201,
@@ -46,7 +50,7 @@ function AuthProvider(props) {
     const tokens = getTokensInfo();
 
     if (tokens?.token) {
-      await fetchBase("/auth/logout", {
+      await fetchBase(authUrl("/auth/logout"), {
         method: "POST",
       });
     }
@@ -65,7 +69,7 @@ function AuthProvider(props) {
 
     try {
       if (tokens?.token) {
-        const response = await fetchBase("/auth/me", {
+        const response = await fetchBase(authUrl("/auth/me"), {
           method: "GET",
         });
 
@@ -88,7 +92,7 @@ function AuthProvider(props) {
     if (!tokens?.token) return;
 
     try {
-      const response = await fetchBase("/auth/me", { method: "GET" });
+      const response = await fetchBase(authUrl("/auth/me"), { method: "GET" });
       if (response.status === 401) {
         logOut();
         return;

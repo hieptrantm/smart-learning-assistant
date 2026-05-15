@@ -52,6 +52,7 @@ app = FastAPI(
     title="Data Ingestor Service",
     description="Upload academic PDFs → parse, OCR, chunk, embed & index into Qdrant.",
     version="1.0.0",
+    root_path="/ingest",
 )
 
 app.add_middleware(
@@ -328,6 +329,20 @@ def update_subject(
     db.commit()
     db.refresh(subject)
     return _subject_to_out(subject)
+
+
+@app.delete("/subjects/{subject_id}", summary="Delete a subject and all associated data")
+def delete_subject(
+    subject_id: int,
+    user_id: int = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    subject = db.query(StudySubject).filter_by(id=subject_id, user_id=user_id).first()
+    if not subject:
+        raise HTTPException(404, "Subject not found")
+    db.delete(subject)
+    db.commit()
+    return {"success": True, "id": subject_id}
 
 
 @app.post("/ingest/sync", summary="Upload & ingest a PDF (synchronous, waits for result)")

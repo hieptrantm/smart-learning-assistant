@@ -13,7 +13,7 @@ engine = create_engine(DATABASE_URL)
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Auth Service")
+app = FastAPI(title="Auth Service", root_path="/auth")
 
 app.add_middleware(
     CORSMiddleware,
@@ -26,6 +26,11 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(detect_router)
 
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8001, reload=True)
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

@@ -2,7 +2,7 @@ import { useCallback, useMemo } from "react";
 import useFetch from "../auth/useFetch";
 
 const PLANNER_API_URL =
-  process.env.REACT_APP_PLANNER_API_URL || "http://localhost:8006";
+  process.env.REACT_APP_PLANNER_API_URL || "http://localhost:8005";
 
 const plannerUrl = (path) => `${PLANNER_API_URL}${path}`;
 
@@ -14,14 +14,14 @@ export function usePlannerService() {
 
   /** List all subjects for the current user */
   const getSubjects = useCallback(async () => {
-    const res = await fetchWithAuth(plannerUrl("/planner/subjects"));
+    const res = await fetchWithAuth(plannerUrl("/subjects"));
     if (!res.ok) throw new Error("Failed to fetch subjects");
     return res.json();
   }, [fetchWithAuth]);
 
   /** Get a single subject detail */
   const getSubject = useCallback(async (subjectId) => {
-    const res = await fetchWithAuth(plannerUrl(`/planner/subjects/${subjectId}`));
+    const res = await fetchWithAuth(plannerUrl(`/subjects/${subjectId}`));
     if (!res.ok) throw new Error("Failed to fetch subject");
     return res.json();
   }, [fetchWithAuth]);
@@ -35,7 +35,7 @@ export function usePlannerService() {
     if (data.end_date !== undefined) formData.append("end_date", data.end_date || "");
     if (data.free_time != null) formData.append("free_time", JSON.stringify(data.free_time));
 
-    const res = await fetchWithAuth(plannerUrl(`/planner/subjects/${subjectId}`), {
+    const res = await fetchWithAuth(plannerUrl(`/subjects/${subjectId}`), {
       method: "PUT",
       body: formData,
     });
@@ -45,7 +45,7 @@ export function usePlannerService() {
 
   /** Delete a subject */
   const deleteSubject = useCallback(async (subjectId) => {
-    const res = await fetchWithAuth(plannerUrl(`/planner/subjects/${subjectId}`), {
+    const res = await fetchWithAuth(plannerUrl(`/subjects/${subjectId}`), {
       method: "DELETE",
     });
     if (!res.ok) throw new Error("Failed to delete subject");
@@ -54,14 +54,14 @@ export function usePlannerService() {
 
   /** Check pipeline status (ingest + plan generation) */
   const getSubjectStatus = useCallback(async (subjectId) => {
-    const res = await fetchWithAuth(plannerUrl(`/planner/subjects/${subjectId}/status`));
+    const res = await fetchWithAuth(plannerUrl(`/subjects/${subjectId}/status`));
     if (!res.ok) throw new Error("Failed to get status");
     return res.json();
   }, [fetchWithAuth]);
 
   /** Get generated study plan */
   const getStudyPlan = useCallback(async (subjectId) => {
-    const res = await fetchWithAuth(plannerUrl(`/planner/subjects/${subjectId}/plan`));
+    const res = await fetchWithAuth(plannerUrl(`/subjects/${subjectId}/plan`));
     if (!res.ok) throw new Error("Failed to get plan");
     return res.json();
   }, [fetchWithAuth]);
@@ -75,7 +75,7 @@ export function usePlannerService() {
           google_refresh_token: googleAuth?.google_refresh_token,
         };
 
-    const res = await fetchWithAuth(plannerUrl(`/planner/subjects/${subjectId}/sync-calendar`), {
+    const res = await fetchWithAuth(plannerUrl(`/subjects/${subjectId}/sync-calendar`), {
       method: "POST",
       body: JSON.stringify(payload),
     });
@@ -85,7 +85,7 @@ export function usePlannerService() {
 
   /** Get occupied time slots for the current user */
   const getOccupiedSlots = useCallback(async (userId, excludeSubjectId = null) => {
-    let url = `/planner/occupied-slots/${userId}`;
+    let url = `/occupied-slots/${userId}`;
     if (excludeSubjectId) url += `?exclude_subject_id=${excludeSubjectId}`;
     const res = await fetchWithAuth(plannerUrl(url));
     if (!res.ok) throw new Error("Failed to get occupied slots");

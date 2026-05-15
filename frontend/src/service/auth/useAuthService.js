@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { getTokensInfo, setTokensInfo } from "./token";
 
 const AUTH_SERVICE_URL =
-  process.env.REACT_APP_AUTH_SERVICE_URL || "http://localhost:8001";
+  process.env.REACT_APP_AUTH_SERVICE_URL || "http://localhost:8005";
 const authUrl = (path) => `${AUTH_SERVICE_URL}${path}`;
 
 async function fetchWithAuth(url, options = {}) {
@@ -78,7 +78,7 @@ export function useAuthSignUpService() {
 
 export function useAuthGetMeService() {
   return useCallback(async () => {
-    const res = await fetchWithAuth(`/auth/me`);
+    const res = await fetchWithAuth(authUrl("/auth/me"));
     if (!res.ok) {
       const text = await res.text();
       throw new Error(`Failed to fetch user: ${res.status} ${text}`);
@@ -89,7 +89,7 @@ export function useAuthGetMeService() {
 
 export function useAuthPatchMeService() {
   return useCallback(async (data) => {
-    const res = await fetchWithAuth(`/auth/me`, {
+    const res = await fetchWithAuth(authUrl("/auth/me"), {
       method: "PATCH",
       body: JSON.stringify(data),
     });
@@ -100,7 +100,7 @@ export function useAuthPatchMeService() {
 
 export function useAuthLogoutService() {
   return useCallback(async () => {
-    await fetchWithAuth(`/auth/logout`, { method: "POST" });
+    await fetchWithAuth(authUrl("/auth/logout"), { method: "POST" });
     setTokensInfo(null);
   }, []);
 }
@@ -192,7 +192,7 @@ export function useAuthChangePasswordService() {
 
 export function useAuthRequestPasswordChangeService() {
   return useCallback(async () => {
-    const res = await fetchWithAuth(`/auth/request-change-password-email`, {
+    const res = await fetchWithAuth(authUrl(`/auth/request-change-password-email`), {
       method: "POST",
     });
     if (!res.ok) throw new Error("Set password failed");
@@ -202,7 +202,7 @@ export function useAuthRequestPasswordChangeService() {
 
 export function useAuthVerifyEmailService() {
   return useCallback(async (data) => {
-    const res = await fetchWithAuth(`/auth/verify-email`, {
+    const res = await fetchWithAuth(authUrl(`/auth/verify-email`), {
       method: "PATCH",
       body: JSON.stringify(data),
     });
@@ -213,7 +213,7 @@ export function useAuthVerifyEmailService() {
 
 export function useAuthRequestEmailVerificationService() {
   return useCallback(async (data) => {
-    const res = await fetchWithAuth(`/auth/send-verification`, {
+    const res = await fetchWithAuth(authUrl(`/auth/send-verification`), {
       method: "POST",
       body: JSON.stringify(data),
     });

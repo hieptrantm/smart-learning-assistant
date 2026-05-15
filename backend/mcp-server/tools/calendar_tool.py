@@ -81,13 +81,7 @@ class BuildScheduleTool:
                         "error": f"Missing required field: {key}",
                     })
 
-            # creds = self._build_credentials(google_access_token, google_refresh_token)
-            SCOPES = ['https://www.googleapis.com/auth/calendar']
-            creds = Credentials.from_authorized_user_file('tools/creds_hieptrantm.json', SCOPES)
-            if creds.expired and creds.refresh_token:
-                creds.refresh(Request()) 
-                with open('tools/creds_hieptrantm.json', 'w') as f:
-                    f.write(creds.to_json())
+            creds = self._build_credentials(google_access_token, google_refresh_token)
             
             service = build("calendar", "v3", credentials=creds, cache_discovery=False)
 

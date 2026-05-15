@@ -37,8 +37,7 @@ QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
 QDRANT_PORT = int(os.getenv("QDRANT_PORT", "6333"))
 
 # ── MCP Server (study-planner-mcp) ────────────────────────────
-MCP_HOST = os.getenv("MCP_PLANNER_HOST", "localhost")
-MCP_PORT = os.getenv("MCP_PLANNER_PORT", "8031")
+MCP_URL = os.getenv("MCP_URL", "http://localhost:8002/mcp")
 
 # ── Neo4j ──────────────────────────────────────────────────────
 NEO4J_URI = os.getenv("NEO4J_URI", "bolt://localhost:7687")

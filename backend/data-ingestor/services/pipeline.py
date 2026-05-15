@@ -130,7 +130,7 @@ def _trigger_plan(subject_id: int, google_access_token: Optional[str], google_re
 
         with httpx.Client(timeout=10) as client:
             client.post(
-                f"{PLANNER_URL}/planner/subjects/{subject_id}/generate-plan",
+                f"{PLANNER_URL}/subjects/{subject_id}/generate-plan",
                 json=payload,
             )
     except Exception as e:

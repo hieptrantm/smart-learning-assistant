@@ -1,7 +1,4 @@
-mcp[cli]>=1.0.0
 fastmcp>=0.1.0
-python-dotenv>=1.0.0
-pydantic>=2.0.0
 google-auth>=2.35.0
 google-auth-oauthlib>=1.2.1
 google-api-python-client>=2.149.0
@@ -22,6 +19,7 @@ langchain_text_splitters==0.3.9
 langchain_qdrant==0.2.0
 langchain-openai==0.3.30
 langchain-docling==1.0.0
+langchain-together==0.3.1
 pypdf==6.0.0
 beautifulsoup4==4.13.4
 fastembed==0.7.1

@@ -1,12 +1,40 @@
 # version: '3.8'
 
 services:
+  mcp-server:
+    build:
+      context: ./mcp-server
+    container_name: sla-mcp-server
+    restart: unless-stopped
+    env_file:
+      - ./mcp-server/.env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-all}
+      - NEO4J_URI=bolt://neo4j:7687
+      - QDRANT_HOST=qdrant
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 240s
+    ports:
+      - "8002:8002"
+    networks:
+      - app-network
+
   postgres:
     image: postgres:15-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: authdb
+    container_name: sla-postgres
     ports:
       - "5434:5432"
     volumes:
@@ -20,50 +48,87 @@ services:
       timeout: 5s
       retries: 5
 
-  # auth-service:
-  #   build: ./auth-service
-  #   environment:
-  #     DATABASE_URL: postgresql://postgres:postgres@postgres:5432/authdb
-  #     SECRET_KEY: hiep-tran-thanh-mieu
-  #   # ports:
-  #   #   - "8001:8000"
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #   networks:
-  #     - app-network
+  auth-service:
+    build: 
+      context: ./auth-service
+    container_name: sla-auth-service
+    env_file:
+      - ./auth-service/.env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/authdb
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 240s
+    ports:
+      - "8006:8000"
 
-  # ai-service:
-  #   build: ./ai-service
-  #   # ports:
-  #   #   - "8002:8000"
-  #   depends_on:
-  #     - auth-service
-  #   networks:
-  #     - app-network
+  ai-service:
+    build: 
+      context: ./ai-service
+    container_name: sla-ai-service
+    restart: unless-stopped
+    env_file:
+      - ./ai-service/.env
+    environment:
+      MCP_URL: http://mcp-server:8002/mcp
+      SERVICE_ROOT_PATH: /ai-service
+      NVIDIA_VISIBLE_DEVICES: ${NVIDIA_VISIBLE_DEVICES:-all}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+    depends_on:
+      mcp-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    ports:
+      - "8003:8003"
+    networks:
+      - app-network
 
-  # kong:
-  #   image: kong:3.9.1-ubuntu
-  #   environment:
-  #     KONG_DATABASE: "off"
-  #     KONG_DECLARATIVE_CONFIG: /kong/kong.yml
-  #     KONG_PROXY_ACCESS_LOG: /dev/stdout
-  #     KONG_ADMIN_ACCESS_LOG: /dev/stdout
-  #     KONG_PROXY_ERROR_LOG: /dev/stderr
-  #     KONG_ADMIN_ERROR_LOG: /dev/stderr
-  #     KONG_ADMIN_LISTEN: 0.0.0.0:8001
-  #   volumes:
-  #     - ./kong.yml:/kong/kong.yml:ro
-  #   ports:
-  #     - "8000:8000"
-  #     - "8004:8001"
-  #   depends_on:
-  #     - auth-service
-  #     - ai-service
-  #   networks:
-  #     - app-network
+  kong:
+    container_name: sla-kong
+    image: kong:3.9.1-ubuntu
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /kong/kong.yml
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+    volumes:
+      - ./kong.yml:/kong/kong.yml:ro
+    ports:
+      - "8005:8000" # Public 
+      - "8004:8001" # Admin API
+    depends_on:
+      ai-service:
+        condition: service_healthy
+      mcp-server:
+        condition: service_healthy
+      data-ingestor:
+        condition: service_healthy
+      study-planner:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    networks:
+      - app-network
 
   qdrant:
+    container_name: sla-qdrant
     image: qdrant/qdrant:latest
     ports:
       - "6333:6333"
@@ -73,39 +138,73 @@ services:
     networks:
       - app-network
 
-  # data-ingestor:
-  #   build: ./data-ingestor
-  #   environment:
-  #     QDRANT_HOST: qdrant
-  #     QDRANT_PORT: 6333
-  #   ports:
-  #     - "8005:8005"
-  #   depends_on:
-  #     - qdrant
-  #   networks:
-  #     - app-network
-  #   volumes:
-  #     - ingestor_uploads:/app/uploads
+  data-ingestor:
+    build:
+      context: ./data-ingestor
+    container_name: sla-data-ingestor
+    restart: unless-stopped
+    env_file:
+      - ./data-ingestor/.env
+    environment:
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6333
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: testtest
+      PLANNER_URL: http://study-planner:8006
+      SERVICE_ROOT_PATH: /data-ingestor
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/authdb
+    depends_on:
+      qdrant:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8005/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    ports:
+      - "8008:8005"
+    volumes:
+      - ingestor_uploads:/app/uploads
+    networks:
+      - app-network
 
-  # study-planner:
-  #   build: ./study-planner-api
-  #   environment:
-  #     DATABASE_URL: postgresql://postgres:postgres@postgres:5432/authdb
-  #     SECRET_KEY: hiep-tran-thanh-mieu
-  #     INGESTOR_URL: http://data-ingestor:8005
-  #     QDRANT_HOST: qdrant
-  #     QDRANT_PORT: 6333
-  #   ports:
-  #     - "8006:8006"
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #     data-ingestor:
-  #       condition: service_started
-  #     qdrant:
-  #       condition: service_started
-  #   networks:
-  #     - app-network
+  study-planner:
+    build:
+      context: ./study-planner-api
+    container_name: sla-study-planner
+    restart: unless-stopped
+    env_file:
+      - ./study-planner-api/.env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/authdb
+      INGESTOR_URL: http://data-ingestor:8005
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: 6333
+      SERVICE_ROOT_PATH: /study-planner
+      MCP_URL: http://mcp-server:8002/mcp
+    depends_on:
+      postgres:
+        condition: service_healthy
+      data-ingestor:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+      mcp-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8006/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    ports:
+      - "8009:8006"
+    networks:
+      - app-network
 
   neo4j:
     image: neo4j:latest
@@ -116,6 +215,7 @@ services:
       - "7687:7687"
     networks:
       - app-network
+    container_name: sla-neo4j
 
 volumes:
   postgres_data:

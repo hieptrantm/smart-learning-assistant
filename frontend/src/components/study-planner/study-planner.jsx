@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { usePlannerService } from "../../service/planner/usePlannerService";
 import toast from "react-hot-toast";
+import { getGoogleToken } from "../../service/auth/googleToken";
+import { useRequestCalendarToken } from "../../service/auth/googleAuth";
 
 const StudyPlanner = ({ user }) => {
   const [subjects, setSubjects] = useState([]);
@@ -24,6 +26,7 @@ const StudyPlanner = ({ user }) => {
   const [expandedSubject, setExpandedSubject] = useState(null);
 
   const { getSubjects, getStudyPlan, syncCalendar } = usePlannerService();
+  const requestCalendarToken = useRequestCalendarToken();
 
   const loadData = useCallback(async () => {
     try {
@@ -79,15 +82,18 @@ const StudyPlanner = ({ user }) => {
   };
 
   const handleSyncCalendar = async (subjectId) => {
-    const accessToken = prompt("Nhập Google Access Token để đồng bộ Calendar:");
-    if (accessToken === null) return;
+    const tokenData = getGoogleToken();
 
-    const refreshToken = prompt("Nhập Google Refresh Token (có thể để trống nếu token access còn hạn):") || undefined;
+    if (!tokenData?.google_access_token) {
+      toast("Vui lòng cấp quyền Google Calendar trước.", { icon: "ℹ️" });
+      requestCalendarToken();
+      return;
+    }
 
     try {
       const result = await syncCalendar(subjectId, {
-        google_access_token: accessToken || undefined,
-        google_refresh_token: refreshToken,
+        google_access_token: tokenData.google_access_token,
+        google_refresh_token: tokenData.google_refresh_token,
       });
 
       if (result.success_count > 0) {

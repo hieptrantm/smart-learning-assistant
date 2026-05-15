@@ -67,26 +67,47 @@ const ImportDocs = ({ user }) => {
   const fileInputRef = useRef(null);
   const modalRef = useRef(null);
 
-  const { getSubjects, createSubject, updateSubject, ingest} = useIngestorService();
+  const { getSubjects, createSubject, updateSubject, deleteSubject: deleteSubjectApi, ingest} = useIngestorService();
   const requestCalendarToken = useRequestCalendarToken();
   const [googleToken, setGoogleTokenState] = useState(() => getGoogleToken());
 
   // ── Load subjects from ingestor API ────────────────────────
+  const refreshSubjects = useCallback(async () => {
+    try {
+      const data = await getSubjects();
+      setSubjects(data);
+    } catch (err) {
+      console.error("Failed to refresh subjects:", err);
+    }
+  }, [getSubjects]);
+
   const loadSubjects = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await getSubjects();
-      setSubjects(data);
+      await refreshSubjects();
     } catch (err) {
       console.error("Failed to load subjects:", err);
     } finally {
       setLoading(false);
     }
-  }, [getSubjects]);
+  }, [refreshSubjects]);
 
   useEffect(() => {
     if (user) loadSubjects();
   }, [user, loadSubjects]);
+
+  // Auto-polling: refresh every 5s while any subject is still processing
+  useEffect(() => {
+    if (!user) return;
+
+    const hasProcessing = subjects.some(
+      (s) => s.ingest_status === "processing" || s.plan_status === "generating"
+    );
+    if (!hasProcessing) return;
+
+    const timer = setInterval(refreshSubjects, 5000);
+    return () => clearInterval(timer);
+  }, [subjects, user, refreshSubjects]);
 
   // Get occupied time slots from other subjects
   const getOccupiedSlots = (excludeSubjectId = null) => {
@@ -275,10 +296,15 @@ const ImportDocs = ({ user }) => {
     }
   };
 
-  const deleteSubject = (id) => {
+  const deleteSubject = async (id) => {
     if (!window.confirm("Bạn có chắc muốn xóa môn học này?")) return;
-    setSubjects((prev) => prev.filter((s) => s.id !== id));
-    toast.success("Đã xóa môn học");
+    try {
+      await deleteSubjectApi(id);
+      setSubjects((prev) => prev.filter((s) => s.id !== id));
+      toast.success("Đã xóa môn học");
+    } catch (err) {
+      toast.error("Lỗi khi xóa: " + err.message);
+    }
   };
 
   const getGradeColor = (grade) => {

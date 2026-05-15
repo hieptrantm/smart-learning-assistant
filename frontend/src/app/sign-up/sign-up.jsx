@@ -8,7 +8,7 @@ import GoogleAuth from "../../service/auth/googleAuth";
 import toast from "react-hot-toast";
 
 const AUTH_SERVICE_URL =
-  process.env.REACT_APP_AUTH_SERVICE_URL || "http://localhost:8001";
+  process.env.REACT_APP_AUTH_SERVICE_URL || "http://localhost:8005";
 const authUrl = (path) => `${AUTH_SERVICE_URL}${path}`;
 
 const SignUp = () => {

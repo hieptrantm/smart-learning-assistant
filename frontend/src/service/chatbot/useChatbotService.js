@@ -1,8 +1,8 @@
 import { useCallback, useMemo } from "react";
 import useFetch from "../auth/useFetch";
 
-const AI_SERVICE_URL = process.env.REACT_APP_AI_SERVICE_URL || "";
-const PLANNER_API_URL = process.env.REACT_APP_PLANNER_API_URL || "http://localhost:8006";
+const AI_SERVICE_URL = process.env.REACT_APP_AI_SERVICE_URL || "http://localhost:8005";
+const PLANNER_API_URL = process.env.REACT_APP_PLANNER_API_URL || "http://localhost:8005";
 
 const aiUrl = (path) => `${AI_SERVICE_URL}${path}`;
 const plannerUrl = (path) => `${PLANNER_API_URL}${path}`;
@@ -81,7 +81,7 @@ export function useChatbotService() {
     const body = { learning_status: learningStatus };
     if (score !== null) body.score = score;
 
-    const res = await fetchWithAuth(plannerUrl(`/planner/sessions/${sessionId}/learning-status`), {
+    const res = await fetchWithAuth(plannerUrl(`/sessions/${sessionId}/learning-status`), {
       method: "PUT",
       body: JSON.stringify(body),
     });
@@ -91,7 +91,7 @@ export function useChatbotService() {
 
   // Regenerate plan for subjects with failed sessions
   const regeneratePlan = useCallback(async (subjectId) => {
-    const res = await fetchWithAuth(plannerUrl(`/planner/subjects/${subjectId}/regenerate-plan`), {
+    const res = await fetchWithAuth(plannerUrl(`/subjects/${subjectId}/regenerate-plan`), {
       method: "POST",
       body: JSON.stringify({}),
     });
@@ -101,7 +101,7 @@ export function useChatbotService() {
 
   // Generate plan for a subject (called after failed quiz to create new plan)
   const generatePlan = useCallback(async (subjectId) => {
-    const res = await fetchWithAuth(plannerUrl(`/planner/subjects/${subjectId}/generate-plan`), {
+    const res = await fetchWithAuth(plannerUrl(`/subjects/${subjectId}/generate-plan`), {
       method: "POST",
       body: JSON.stringify({}),
     });

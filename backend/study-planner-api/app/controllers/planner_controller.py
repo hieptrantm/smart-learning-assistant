@@ -21,7 +21,7 @@ from app.services.planner_orchestrator import run_full_pipeline
 
 from typing import Optional, List
 
-router = APIRouter(prefix="/planner", tags=["Study Planner"])
+router = APIRouter(prefix="", tags=["Study Planner"])
 
 
 # ── Helpers ───────────────────────────────────────────────────

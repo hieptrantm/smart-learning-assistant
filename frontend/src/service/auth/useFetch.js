@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { getTokensInfo, setTokensInfo } from "./token";
 
 const AUTH_SERVICE_URL =
-  process.env.REACT_APP_AUTH_SERVICE_URL || "http://localhost:8001";
+  process.env.REACT_APP_AUTH_SERVICE_URL || "http://localhost:8005";
 const authUrl = (path) => `${AUTH_SERVICE_URL}${path}`;
 
 function useFetch() {

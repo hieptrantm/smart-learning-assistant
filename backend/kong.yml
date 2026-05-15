@@ -3,38 +3,28 @@ _format_version: "3.0"
 services:
   - name: auth-service
     url: http://auth-service:8000
-    # url: http://localhost:8001
     routes:
       - name: auth-route
         paths:
           - /auth
-          - /detect 
+          - /detect
         strip_path: false
 
   - name: ai-service
-    url: http://ai-service:8000
-    # url: http://localhost:8000
+    url: http://ai-service:8003
     routes:
       - name: ai-route
         paths:
-          - /ai/upload
-        strip_path: false
+          - /ai
+        strip_path: true
 
-  - name: agent-service
-    url: http://agent-service:8000
+  - name: mcp-server
+    url: http://mcp-server:8002
     routes:
-      - name: agent-route
+      - name: mcp-route
         paths:
-          - /agent
-        strip_path: false
-
-  - name: study-planner-service
-    url: http://study-planner:8006
-    routes:
-      - name: planner-route
-        paths:
-          - /planner
-        strip_path: false
+          - /mcp
+        strip_path: true
 
   - name: data-ingestor-service
     url: http://data-ingestor:8005
@@ -43,4 +33,12 @@ services:
         paths:
           - /ingest
           - /search
-        strip_path: false
+        strip_path: true
+
+  - name: study-planner-service
+    url: http://study-planner:8006
+    routes:
+      - name: planner-route
+        paths:
+          - /planner
+        strip_path: true

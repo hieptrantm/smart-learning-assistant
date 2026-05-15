@@ -5,6 +5,7 @@ Exposes build_schedule and send_email tools via FastMCP.
 
 import logging
 from dotenv import load_dotenv
+from fastapi.responses import JSONResponse
 from mcp.server.fastmcp import FastMCP
 
 import config
@@ -40,9 +41,16 @@ quiz_generator = QuizGeneratorTool(llm_client)
 
 # Initialize MCP server
 mcp_server = FastMCP("StudyPlannerTools", port=MCP_PORT, host=MCP_HOST)
+
+@mcp_server.custom_route("/health", methods=["GET"])
+async def health_check(request):
+    return JSONResponse({"status": "healthy", "service": "mcp-server"})
+    
 mcp_server.add_tool(calendar_tool.build_one_schedule)
 mcp_server.add_tool(email_tool.send_email)
 mcp_server.add_tool(retrieval.retrieve)
 mcp_server.add_tool(quiz_generator.generate_quiz)
+
+
 if __name__ == "__main__":
     mcp_server.run(transport="streamable-http")

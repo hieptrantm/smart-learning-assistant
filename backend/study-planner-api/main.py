@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
 from app.controllers.planner_controller import router as planner_router
-from app.config import APP_HOST, APP_PORT, MCP_HOST, MCP_PORT
+from app.config import APP_HOST, APP_PORT, MCP_URL
 from app.database import Base, engine
 from app import models  # noqa: F401
 from app.llm.together_llm import TogetherLLM
@@ -46,7 +46,7 @@ async def lifespan(app: FastAPI):
     mcp_client = MultiServerMCPClient(
         {
             "study_planner": {
-                "url": f"http://{MCP_HOST}:{MCP_PORT}/mcp",
+                "url": MCP_URL,
                 "transport": "streamable_http",
             }
         }
@@ -66,6 +66,7 @@ app = FastAPI(
     description="Manage subjects, generate AI study plans, sync with Google Calendar.",
     version="1.0.0",
     lifespan=lifespan,
+    root_path="/planner",
 )
 
 app.add_middleware(

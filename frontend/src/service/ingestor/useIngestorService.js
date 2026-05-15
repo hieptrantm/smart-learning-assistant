@@ -66,6 +66,15 @@ export function useIngestorService() {
     return res.json();
   }, [fetchWithAuth]);
 
+  /** Delete a subject and all associated data */
+  const deleteSubject = useCallback(async (subjectId) => {
+    const res = await fetchWithAuth(ingestorUrl(`/subjects/${subjectId}`), {
+      method: "DELETE",
+    });
+    if (!res.ok) throw new Error("Failed to delete subject");
+    return res.json();
+  }, [fetchWithAuth]);
+
   // ── Raw ingest endpoints ─────────────────────────────────────
 
   /**
@@ -116,9 +125,10 @@ export function useIngestorService() {
     getSubjects,
     createSubject,
     updateSubject,
+    deleteSubject,
     // Raw ingest
     ingest,
     ingestSync,
-  }), [getSubjects, createSubject, updateSubject, ingest, ingestSync]);
+  }), [getSubjects, createSubject, updateSubject, deleteSubject, ingest, ingestSync]);
 }
 

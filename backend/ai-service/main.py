@@ -46,9 +46,8 @@ llm_client = OpenAILLM(openai_api_key=OPENAI_API_KEY, model_name=MODEL_ID)
 history_summarization_engine = HistorySummarizationEngine(llm_client=llm_client)
 
 tools: List[BaseTool] = []
-mcp_host = os.getenv("MCP_HOST", "localhost")
-mcp_port = os.getenv("MCP_PORT", "8030")
-logger.info(f"Configured MCP host: {mcp_host}, port: {mcp_port}")
+mcp_url = os.getenv("MCP_URL", "http://localhost:8002/mcp")
+logger.info(f"Configured MCP URL: {mcp_url}")
 
 prompts = get_prompts()
 explain_system_prompt = prompts.get("explain_system_prompt", "")
@@ -61,7 +60,7 @@ async def lifespan(app: FastAPI):
         mcp_client = MultiServerMCPClient(
             {
                 "itsm": {
-                    "url": f"http://{mcp_host}:{mcp_port}/mcp",
+                    "url": mcp_url,
                     "transport": "streamable_http",
                 }
             }
@@ -70,14 +69,14 @@ async def lifespan(app: FastAPI):
         # Filter to user only retrieve tool
         tools = [tool for tool in tools if tool.name in ["retrieve", "generate_quiz"]]
     except Exception as e:
-        logger.error(f"Error connecting to MCP server at {mcp_host}:{mcp_port} - {e}")
+        logger.error(f"Error connecting to MCP server at {mcp_url} - {e}")
         tools = []
     logger.info(f"Loaded {len(tools)} MCP tools: {[t.name for t in tools]}")
     # logger.info(f"Detail of tools: {tools}")
     yield
 
 
-app = FastAPI(title="Teacher Assistant Chatbot API", lifespan=lifespan)
+app = FastAPI(title="Teacher Assistant Chatbot API", lifespan=lifespan, root_path="/ai")
 
 app.add_middleware(
     CORSMiddleware,
@@ -390,4 +389,4 @@ async def health():
     return JSONResponse({"status": "ok"})
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8111)
+    uvicorn.run(app, host="0.0.0.0", port=8003)
