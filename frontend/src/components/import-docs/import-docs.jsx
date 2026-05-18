@@ -309,7 +309,7 @@ const ImportDocs = ({ user }) => {
 
   const getGradeColor = (grade) => {
     if (grade >= 9) return "#059669";
-    if (grade >= 7) return "#6366f1";
+    if (grade >= 7) return "#003087";
     if (grade >= 5) return "#d97706";
     return "#ef4444";
   };

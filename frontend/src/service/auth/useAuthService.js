@@ -154,6 +154,32 @@ export function useAuthGoogleLoginService() {
   }, []);
 }
 
+/** Login with Google access_token (implicit flow — calendar + auth in one shot) */
+export function useAuthGoogleLoginAccessTokenService() {
+  return useCallback(async (accessToken) => {
+    const res = await fetch(authUrl("/auth/google/login-access-token"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ access_token: accessToken }),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text().catch(() => "Unknown error");
+      console.error(`Google login (access_token) failed: ${res.status} ${errorText}`);
+      throw new Error(`Google login failed: ${res.status}`);
+    }
+    const result = await res.json();
+
+    setTokensInfo({
+      token: result.access_token,
+      refreshToken: result.refresh_token,
+      tokenExpires: result.expires_at,
+    });
+
+    return result;
+  }, []);
+}
+
 export function useAuthForgotPassword() {
   return useCallback(async (data) => {
     const res = await fetch(authUrl("/auth/forgot-password"), {

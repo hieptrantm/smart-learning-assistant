@@ -6,7 +6,7 @@ import { useAuthActions, useAuthTokens } from "../../service/auth/useAuth";
 import { useAuthLoginService } from "../../service/auth/useAuthService";
 import { useAuthForgotPassword } from "../../service/auth/useAuthService";
 import "./sign-in.css";
-import GoogleAuth from "../../service/auth/googleAuth";
+import GoogleAuth, { GoogleAuthWithCalendar } from "../../service/auth/googleAuth";
 import toast from "react-hot-toast";
 
 // Sign In Component
@@ -153,7 +153,7 @@ const SignIn = () => {
         </div>
 
         <div className="social-login">
-          <GoogleAuth />
+          <GoogleAuthWithCalendar />
         </div>
 
         <div className="auth-footer">

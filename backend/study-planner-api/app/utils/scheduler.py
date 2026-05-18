@@ -639,7 +639,9 @@ class ChunkScheduler(TreeScheduler):
 
     @staticmethod
     def _build_subject_filter(subject_keys: list[str]) -> Optional[Filter]:
-        candidates = [str(value).strip() for value in subject_keys if value is not None and str(value).strip()]
+        # Keep original value (do NOT strip) so it matches whatever was stored in Qdrant.
+        # Use .strip() only to skip blank/None entries.
+        candidates = [str(value) for value in subject_keys if value is not None and str(value).strip()]
         if not candidates:
             return None
 

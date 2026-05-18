@@ -267,6 +267,30 @@
   color: white;
 }
 
+/* Google Login button (GoogleAuthWithCalendar) */
+.google-login-btn {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid #dadce0;
+  border-radius: 8px;
+  background: white;
+  font-size: 14px;
+  font-weight: 600;
+  color: #3c4043;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: background 0.2s, box-shadow 0.2s;
+  font-family: inherit;
+}
+
+.google-login-btn:hover {
+  background: #f8f9fa;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
 .facebook-btn .social-icon {
   background: #1877f2;
   color: white;

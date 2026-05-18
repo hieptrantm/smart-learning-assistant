@@ -1,10 +1,13 @@
 "use client";
 
 import "./navbar.css";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthActions } from "../../service/auth/useAuth";
-import { useAuthRequestPasswordChangeService } from "../../service/auth/useAuthService";
-import { useAuthRequestEmailVerificationService } from "../../service/auth/useAuthService";
+import {
+  useAuthRequestEmailVerificationService,
+  useAuthRequestPasswordChangeService,
+} from "../../service/auth/useAuthService";
 import toast from "react-hot-toast";
 import {
   GraduationCap,
@@ -13,8 +16,10 @@ import {
   CalendarCheck,
   Upload,
   BarChart3,
-  User,
   LogOut,
+  Mail,
+  ShieldCheck,
+  KeyRound,
 } from "lucide-react";
 
 const Navbarr = ({ onTabChange, activeTab, user, isLoaded }) => {
@@ -37,7 +42,7 @@ const Navbarr = ({ onTabChange, activeTab, user, isLoaded }) => {
   };
 
   const handleVerifyEmail = async () => {
-    if (user && user.email) {
+    if (user?.email) {
       try {
         await sendLinkEmailVerification({
           email: user.email,
@@ -46,41 +51,48 @@ const Navbarr = ({ onTabChange, activeTab, user, isLoaded }) => {
       } catch (error) {
         toast.error("Failed to send verification email: " + error.message);
       }
-    } else {
-      toast.error("User email not available");
+      return;
     }
+
+    toast.error("User email not available");
   };
 
   const handleSetPassword = async () => {
-    if (user && user.email) {
+    if (user?.email) {
       try {
         const res = await sendLinkPassword();
         if (!res.ok) {
           toast.error("Password set email fault");
+          return;
         }
+
         toast.success("Password set email sent!");
       } catch (error) {
         toast.error("Error setting password: " + error.message);
       }
-    } else {
-      toast.error("User email not available");
+      return;
     }
+
+    toast.error("User email not available");
   };
 
   const handleResetPassword = async () => {
-    if (user && user.email) {
+    if (user?.email) {
       try {
         const res = await sendLinkPassword();
         if (!res.ok) {
           toast.error("Password reset email fault");
+          return;
         }
+
         toast.success("Password reset email sent!");
       } catch (error) {
         toast.error("Failed to send password reset email: " + error.message);
       }
-    } else {
-      toast.error("User email not available");
+      return;
     }
+
+    toast.error("User email not available");
   };
 
   const tabs = [
@@ -91,12 +103,24 @@ const Navbarr = ({ onTabChange, activeTab, user, isLoaded }) => {
     { id: "Dashboard", icon: <BarChart3 size={16} />, label: "Dashboard" },
   ];
 
+  const displayName = user?.username || user?.email || "User";
+  const userHandle = user?.email || user?.username || "";
+  const avatarInitials = useMemo(() => {
+    const source = (user?.username || user?.email || "U").trim();
+    const parts = source.split(/\s+/).filter(Boolean);
+
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+
+    return source.slice(0, 2).toUpperCase();
+  }, [user?.email, user?.username]);
+
   return (
     <nav className="header">
       <div className="header-title-btn">
         <div className="header-brand" onClick={() => onTabChange("Home")}>
-          <GraduationCap size={24} className="brand-icon" />
-          <h1 className="header-title">Smart Learning Agent</h1>
+          <img src="/sla_g.png" alt="SLA Logo" className="brand-logo" />
         </div>
         <div className="header-tabs">
           {tabs.map((tab) => (
@@ -111,82 +135,120 @@ const Navbarr = ({ onTabChange, activeTab, user, isLoaded }) => {
           ))}
         </div>
       </div>
+
       <div className="header-actions">
         {!isLoaded ? (
           <div className="loading-indicator">Loading...</div>
         ) : user ? (
-          <>
-            <div className="dropdown">
-              <button className="tab">
-                <User className="user-icon" size={16} />
-                <span className="tab-text">{user.username || user.email}</span>
-              </button>
+          <div className="dropdown user-menu">
+            <button className="user-avatar-trigger" aria-label="User profile menu">
+              {user.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt={displayName}
+                  className="user-avatar-image"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <span className="user-avatar-fallback">{avatarInitials}</span>
+              )}
+            </button>
 
-              <div className="dropdown-content">
-                <div className="user-container">
-                  <div className="detail-row">
-                    <strong>Username:</strong>{" "}
-                    <span id="username">{user.username}</span>
-                  </div>
-                  <div className="detail-row">
-                    <strong>Email:</strong> <span id="email">{user.email}</span>
-                  </div>
-                  <div className="detail-row">
-                    <strong>Email Verified:</strong>{" "}
-                    <span id="email-verified">
-                      {user.email_verified ? "Yes" : "No"}
-                    </span>
-                  </div>
-                  <div className="detail-row">
-                    <strong>Provider:</strong>{" "}
-                    <span id="provider">{user.provider}</span>
-                  </div>
-                  <div className="detail-row">
-                    <strong>Providers:</strong>{" "}
-                    <span id="provider">{user.providers?.join(", ")}</span>
-                  </div>
-
-                  {user.email_verified === true ? null : (
-                    <button
-                      className="btn verify-btn"
-                      id="verifyBtn"
-                      onClick={handleVerifyEmail}
-                    >
-                      Verify Email
-                    </button>
-                  )}
-
-                  {user.has_password === true ? (
-                    <button
-                      className="btn pwd-btn"
-                      id="pwdBtn"
-                      onClick={handleResetPassword}
-                    >
-                      Change Password
-                    </button>
+            <div className="dropdown-content user-card">
+              <div className="user-card-header">
+                <div className="user-card-avatar">
+                  {user.avatar_url ? (
+                    <img
+                      src={user.avatar_url}
+                      alt={displayName}
+                      className="user-card-avatar-image"
+                      referrerPolicy="no-referrer"
+                    />
                   ) : (
-                    <button
-                      className="btn pwd-btn"
-                      id="pwdBtn"
-                      onClick={handleSetPassword}
-                    >
-                      Set Password
-                    </button>
+                    <span className="user-avatar-fallback user-avatar-fallback-large">
+                      {avatarInitials}
+                    </span>
                   )}
                 </div>
+
+                <div className="user-card-heading">
+                  <h3>{displayName}</h3>
+                  <p>{userHandle}</p>
+                </div>
               </div>
+
+              <div className="user-card-details">
+                <div className="detail-row">
+                  <span className="detail-icon">
+                    <Mail size={14} />
+                  </span>
+                  <div>
+                    <strong>Email</strong>
+                    <span id="email">{user.email}</span>
+                  </div>
+                </div>
+
+                <div className="detail-row">
+                  <span className="detail-icon">
+                    <ShieldCheck size={14} />
+                  </span>
+                  <div>
+                    <strong>Trạng thái email</strong>
+                    <span id="email-verified">
+                      {user.email_verified ? "Đã xác minh" : "Chưa xác minh"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {!user.email_verified && (
+                <button
+                  className="btn verify-btn"
+                  id="verifyBtn"
+                  onClick={handleVerifyEmail}
+                >
+                  Xác minh email
+                </button>
+              )}
+
+              {user.has_password ? (
+                <button
+                  className="btn pwd-btn"
+                  id="pwdBtn"
+                  onClick={handleResetPassword}
+                >
+                  <KeyRound size={14} />
+                  Đổi mật khẩu
+                </button>
+              ) : (
+                <button
+                  className="btn pwd-btn"
+                  id="pwdBtn"
+                  onClick={handleSetPassword}
+                >
+                  <KeyRound size={14} />
+                  Đặt mật khẩu
+                </button>
+              )}
+
+              <button className="btn logout-btn" onClick={handleLogout}>
+                <LogOut size={14} />
+                Đăng xuất
+              </button>
             </div>
-            <button className="tab" onClick={handleLogout}>
-              <LogOut className="logout-icon" size={16} />
-              <span className="tab-text">Đăng xuất</span>
-            </button>
-          </>
+          </div>
         ) : (
           <>
-            <button className="header-btn header-btn-outline" onClick={handleSignIn}>
+            <button
+              className="header-btn header-btn-outline"
+              onClick={handleSignIn}
+            >
               Đăng nhập
             </button>
-            <button className="header-btn header-btn-filled" onClick={handleSignUp}>
+            <button
+              className="header-btn header-btn-filled"
+              onClick={handleSignUp}
+            >
               Đăng ký
             </button>
           </>

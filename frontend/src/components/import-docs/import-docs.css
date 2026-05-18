@@ -52,7 +52,7 @@
 .idv2-stat-num {
   font-size: 1.35rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #003087, #0077cc);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -82,7 +82,7 @@
 }
 
 .idv2-add-btn:hover {
-  border-color: #6366f1;
+  border-color: #003087;
   background: linear-gradient(135deg, rgba(99,102,241,0.07), rgba(139,92,246,0.10));
   transform: translateY(-2px);
   box-shadow: 0 8px 30px rgba(99,102,241,0.12);
@@ -92,7 +92,7 @@
   width: 64px;
   height: 64px;
   border-radius: 18px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #003087, #0077cc);
   color: white;
   display: flex;
   align-items: center;
@@ -218,7 +218,7 @@
 
 .idv2-card-action-btn:hover {
   background: #f1f5f9;
-  color: #6366f1;
+  color: #003087;
 }
 
 .idv2-card-action-danger:hover {
@@ -249,7 +249,7 @@
   justify-content: center;
   flex-shrink: 0;
   background: rgba(99,102,241,0.08);
-  color: #6366f1;
+  color: #003087;
 }
 
 .idv2-metric-urgent {
@@ -295,7 +295,7 @@
 .idv2-days-badge {
   font-size: 0.68rem;
   background: rgba(99,102,241,0.08);
-  color: #6366f1;
+  color: #003087;
   padding: 2px 8px;
   border-radius: 100px;
   font-weight: 600;
@@ -356,7 +356,7 @@
 
 .idv2-docs-more {
   font-size: 0.72rem;
-  color: #6366f1;
+  color: #003087;
   font-weight: 600;
   padding: 4px 10px;
 }
@@ -399,7 +399,7 @@
 }
 
 .idv2-mini-day-active .idv2-mini-day-hours {
-  color: #6366f1;
+  color: #003087;
 }
 
 /* ── Empty State ── */
@@ -540,7 +540,7 @@
   width: 32px;
   height: 32px;
   border-radius: 9px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #003087, #0077cc);
   color: white;
   display: flex;
   align-items: center;
@@ -571,7 +571,7 @@
 }
 
 .idv2-input:focus {
-  border-color: #6366f1;
+  border-color: #003087;
   box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
 }
 
@@ -610,7 +610,7 @@
 }
 
 .idv2-emoji-btn:hover {
-  border-color: #6366f1;
+  border-color: #003087;
 }
 
 .idv2-emoji-dropdown {
@@ -665,12 +665,12 @@
 
 .idv2-upload-zone:hover,
 .idv2-upload-active {
-  border-color: #6366f1;
+  border-color: #003087;
   background: rgba(99,102,241,0.03);
 }
 
 .idv2-upload-icon-svg {
-  color: #6366f1;
+  color: #003087;
 }
 
 .idv2-upload-text {
@@ -687,7 +687,7 @@
 .idv2-upload-formats span {
   padding: 3px 10px;
   background: rgba(99,102,241,0.08);
-  color: #6366f1;
+  color: #003087;
   border-radius: 100px;
   font-size: 0.68rem;
   font-weight: 700;
@@ -793,7 +793,7 @@
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  border: 3px solid #6366f1;
+  border: 3px solid #003087;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -856,7 +856,7 @@
   height: 22px;
   border-radius: 50%;
   background: white;
-  border: 3px solid #6366f1;
+  border: 3px solid #003087;
   box-shadow: 0 2px 8px rgba(99,102,241,0.3);
   cursor: pointer;
   transition: all 0.2s;
@@ -871,7 +871,7 @@
   height: 22px;
   border-radius: 50%;
   background: white;
-  border: 3px solid #6366f1;
+  border: 3px solid #003087;
   box-shadow: 0 2px 8px rgba(99,102,241,0.3);
   cursor: pointer;
 }
@@ -890,7 +890,7 @@
 }
 
 .idv2-grade-marks span.active {
-  color: #6366f1;
+  color: #003087;
 }
 
 /* Stars */
@@ -938,14 +938,14 @@
 }
 
 .idv2-date-preview strong {
-  color: #6366f1;
+  color: #003087;
 }
 
 /* ── Free Hours Badge ── */
 .idv2-free-hours-badge {
   margin-left: auto;
   font-size: 0.72rem;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #003087, #0077cc);
   color: white;
   padding: 3px 10px;
   border-radius: 100px;
@@ -1026,7 +1026,7 @@
 
 .idv2-tg-selected {
   background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.18)) !important;
-  color: #6366f1;
+  color: #003087;
 }
 
 .idv2-tg-selected:hover {
@@ -1133,7 +1133,7 @@
 .idv2-btn-submit {
   padding: 10px 24px;
   border: none;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #003087, #0077cc);
   color: white;
   border-radius: 12px;
   font-size: 0.88rem;
@@ -1262,8 +1262,8 @@
 }
 
 .idv2-status-pending {
-  background: #e0e7ff;
-  color: #6366f1;
+  background: #dbeafe;
+  color: #003087;
 }
 
 /* ── Spin animation ── */
@@ -1293,7 +1293,7 @@
 
 .idv2-refresh-btn:hover {
   background: #f1f5f9;
-  color: #6366f1;
+  color: #003087;
 }
 
 /* ── Loading state ── */

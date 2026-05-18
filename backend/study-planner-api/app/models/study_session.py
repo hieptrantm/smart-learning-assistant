@@ -19,7 +19,7 @@ class StudySession(Base):
     calendar_event_id = Column(String(200), nullable=True)
     status = Column(String(30), default="scheduled")
     learning_status = Column(String(30), default="not_started")
-    score = Column(Numeric(3, 1), nullable=True)
+    score = Column(Numeric(5, 2), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
     plan = relationship("StudyPlan", back_populates="sessions")

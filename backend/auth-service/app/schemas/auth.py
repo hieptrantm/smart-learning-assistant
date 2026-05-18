@@ -26,6 +26,7 @@ class UserResponse(BaseModel):
     id: str
     username: str
     email: str
+    avatar_url: Optional[str] = None
     email_verified: bool
     provider: Optional[str]
     providers: list[str]
@@ -33,6 +34,9 @@ class UserResponse(BaseModel):
 
 class GoogleLoginRequest(BaseModel):
     id_token: str
+
+class GoogleAccessTokenRequest(BaseModel):
+    access_token: str
 
 class VerifyEmailRequest(BaseModel):
     token: str

@@ -4,6 +4,8 @@ planner_controller.py – FastAPI router for study-planner endpoints.
 
 from __future__ import annotations
 
+import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 
@@ -18,6 +20,7 @@ from app.schemas.planner import (
     UpdateSessionStatusRequest,
 )
 from app.services.planner_orchestrator import run_full_pipeline
+from app.services.email_service import send_quiz_result_email
 
 from typing import Optional, List
 
@@ -140,12 +143,47 @@ def get_plan(
     if not plan:
         raise HTTPException(404, "No plan generated yet")
 
-    sessions = (
+    # Sessions from the latest plan
+    latest_sessions = (
         db.query(StudySession)
         .filter_by(plan_id=plan.id)
         .order_by(StudySession.session_date, StudySession.start_time)
         .all()
     )
+
+    # Passed sessions from older plans (preserve study history across plan regenerations)
+    older_passed = (
+        db.query(StudySession)
+        .join(StudyPlan, StudySession.plan_id == StudyPlan.id)
+        .filter(
+            StudyPlan.subject_id == subject_id,
+            StudySession.plan_id != plan.id,
+            StudySession.learning_status == "passed",
+        )
+        .order_by(StudySession.session_date, StudySession.start_time)
+        .all()
+    )
+
+    # Combine: passed history first (by date), then remaining sessions from latest plan
+    all_sessions = sorted(
+        older_passed + latest_sessions,
+        key=lambda s: (s.session_date or datetime.date.min, s.start_time or ""),
+    )
+
+    def _session_out(s):
+        return {
+            "id": s.id,
+            "session_date": s.session_date.isoformat() if s.session_date else None,
+            "start_time": s.start_time,
+            "end_time": s.end_time,
+            "title": s.title,
+            "content": s.content,
+            "status": s.status,
+            "learning_status": s.learning_status,
+            "checkpoint_node_id": s.checkpoint_node_id,
+            "score": float(s.score) if s.score is not None else None,
+            "calendar_event_id": s.calendar_event_id,
+        }
 
     return {
         "id": plan.id,
@@ -153,22 +191,7 @@ def get_plan(
         "plan_json": plan.plan_json,
         "calendar_synced": plan.calendar_synced,
         "created_at": plan.created_at.isoformat() if plan.created_at else None,
-        "sessions": [
-            {
-                "id": s.id,
-                "session_date": s.session_date.isoformat() if s.session_date else None,
-                "start_time": s.start_time,
-                "end_time": s.end_time,
-                "title": s.title,
-                "content": s.content,
-                "status": s.status,
-                "learning_status": s.learning_status,
-                "checkpoint_node_id": s.checkpoint_node_id,
-                "score": float(s.score) if s.score is not None else None,
-                "calendar_event_id": s.calendar_event_id,
-            }
-            for s in sessions
-        ],
+        "sessions": [_session_out(s) for s in all_sessions],
     }
 
 
@@ -200,6 +223,7 @@ async def generate_plan(
 def update_session_learning_status(
     session_id: int,
     body: UpdateSessionStatusRequest,
+    background_tasks: BackgroundTasks,
     user_id: int = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
@@ -215,7 +239,42 @@ def update_session_learning_status(
     session.learning_status = body.learning_status
     if body.score is not None:
         session.score = body.score
+
+    # When passed early, record the actual study date/time instead of the planned slot
+    if body.learning_status == "passed":
+        now = datetime.datetime.now()
+        session.session_date = now.date()
+        session.start_time = now.strftime("%H:%M")
+        session.end_time = now.strftime("%H:%M")
+
     db.commit()
+
+    # Send quiz result email in background
+    try:
+        from sqlalchemy import text as sa_text
+        row = db.execute(
+            sa_text("SELECT email, username FROM users WHERE id = :uid LIMIT 1"),
+            {"uid": user_id},
+        ).fetchone()
+        subject = db.query(StudySubject).filter_by(id=session.subject_id).first()
+
+        if row and subject and body.score is not None:
+            to_email, username = row[0], row[1] or "bạn"
+            target_grade = float(subject.target_grade or 7)
+            passed = body.learning_status == "passed"
+            background_tasks.add_task(
+                send_quiz_result_email,
+                to_email=to_email,
+                username=username,
+                subject_name=subject.name,
+                score=float(body.score),
+                target_grade=target_grade,
+                passed=passed,
+            )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Failed to schedule quiz result email: {e}")
+
     return {"message": "Updated", "session_id": session_id, "learning_status": body.learning_status}
 
 

@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from google.oauth2 import id_token
-from google.auth.transport import requests
+from google.auth.transport import requests as google_requests
 from datetime import datetime, timedelta
+import requests as http_requests
 import jwt
 
 from app.schemas.auth import *
@@ -215,6 +216,7 @@ async def get_me(user=Depends(get_current_user), db: Session = Depends(get_db)):
         "id": str(db_user.id),
         "username": db_user.username,
         "email": db_user.email,
+        "avatar_url": db_user.avatar_url,
         "email_verified": db_user.email_verified,
         "provider": providers[0] if providers else None,  # Primary provider
         "providers": providers,  # All linked providers
@@ -228,7 +230,7 @@ async def logout():
 @auth_router.post("/google/login", response_model=TokenResponse)
 async def google_login(request: GoogleLoginRequest, db: Session = Depends(get_db)):
     try:
-        idinfo = id_token.verify_oauth2_token(request.id_token, requests.Request(), GOOGLE_CLIENT_ID, clock_skew_in_seconds=10)
+        idinfo = id_token.verify_oauth2_token(request.id_token, google_requests.Request(), GOOGLE_CLIENT_ID, clock_skew_in_seconds=10)
         if idinfo['aud'] != GOOGLE_CLIENT_ID:
             raise HTTPException(status_code=401, detail="Invalid token audience")
         
@@ -236,6 +238,7 @@ async def google_login(request: GoogleLoginRequest, db: Session = Depends(get_db
         email = idinfo.get('email')
         email_verified = idinfo.get('email_verified', False)
         name = idinfo.get('name', '')
+        picture = idinfo.get('picture')
         
         if not email:
             raise HTTPException(status_code=400, detail="Email not provided by Google")
@@ -251,6 +254,8 @@ async def google_login(request: GoogleLoginRequest, db: Session = Depends(get_db
             user = db.query(User).filter(User.id == auth_provider.user_id).first()
             if not user.email_verified and email_verified:
                 user.email_verified = True
+            if picture:
+                user.avatar_url = picture
             user.last_login = datetime.utcnow()
         else:
             # Check if user exists with this email (account linking)
@@ -265,12 +270,15 @@ async def google_login(request: GoogleLoginRequest, db: Session = Depends(get_db
                 db.add(auth_provider)
                 if not user.email_verified and email_verified:
                     user.email_verified = True
+                if picture:
+                    user.avatar_url = picture
                 user.last_login = datetime.utcnow()
             else:
                 # Create new user
                 user = User(
                     email=email,
                     username=name or email.split("@")[0],
+                    avatar_url=picture,
                     email_verified=email_verified,
                     last_login=datetime.utcnow()
                 )
@@ -302,6 +310,97 @@ async def google_login(request: GoogleLoginRequest, db: Session = Depends(get_db
         raise HTTPException(status_code=401, detail=f"Invalid Google token: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Authentication failed: {str(e)}")
+
+
+@auth_router.post("/google/login-access-token", response_model=TokenResponse)
+def google_login_access_token(request: GoogleAccessTokenRequest, db: Session = Depends(get_db)):
+    """
+    Authenticate using a Google OAuth2 access_token (implicit flow).
+    Verifies the token via Google's userinfo endpoint, then creates/returns the user JWT.
+    Used when the frontend requests both calendar + auth scopes in a single OAuth flow.
+    """
+    try:
+        # Verify the access_token by fetching user info from Google
+        resp = http_requests.get(
+            "https://www.googleapis.com/oauth2/v3/userinfo",
+            headers={"Authorization": f"Bearer {request.access_token}"},
+            timeout=10,
+        )
+
+        if resp.status_code != 200:
+            raise HTTPException(status_code=401, detail="Invalid Google access token")
+
+        userinfo = resp.json()
+        google_user_id = userinfo.get("sub")
+        email = userinfo.get("email")
+        email_verified = userinfo.get("email_verified", False)
+        name = userinfo.get("name", "")
+        picture = userinfo.get("picture")
+
+        if not email or not google_user_id:
+            raise HTTPException(status_code=400, detail="Email not provided by Google")
+
+        # Reuse same user lookup / creation logic as /google/login
+        auth_provider = db.query(AuthProvider).filter(
+            AuthProvider.provider == "google",
+            AuthProvider.provider_id == google_user_id
+        ).first()
+
+        if auth_provider:
+            user = db.query(User).filter(User.id == auth_provider.user_id).first()
+            if not user.email_verified and email_verified:
+                user.email_verified = True
+            if picture:
+                user.avatar_url = picture
+            user.last_login = datetime.utcnow()
+        else:
+            user = db.query(User).filter(User.email == email).first()
+            if user:
+                auth_provider = AuthProvider(
+                    user_id=user.id,
+                    provider="google",
+                    provider_id=google_user_id,
+                )
+                db.add(auth_provider)
+                if not user.email_verified and email_verified:
+                    user.email_verified = True
+                if picture:
+                    user.avatar_url = picture
+                user.last_login = datetime.utcnow()
+            else:
+                user = User(
+                    email=email,
+                    username=name or email.split("@")[0],
+                    avatar_url=picture,
+                    email_verified=email_verified,
+                    last_login=datetime.utcnow(),
+                )
+                db.add(user)
+                db.flush()
+                auth_provider = AuthProvider(
+                    user_id=user.id,
+                    provider="google",
+                    provider_id=google_user_id,
+                )
+                db.add(auth_provider)
+
+        db.commit()
+        db.refresh(user)
+
+        access_token, access_expire = create_access_token({"sub": user.email})
+        refresh_token = create_refresh_token({"sub": user.email})
+
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer",
+            "expires_at": int(access_expire.timestamp() * 1000),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Authentication failed: {str(e)}")
+
 
 @auth_router.post("/request-set-password-email")
 async def request_set_password_email(current_user: User = Depends(get_current_user)):

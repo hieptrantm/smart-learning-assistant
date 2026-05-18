@@ -53,7 +53,7 @@
   font-size: 0.75rem;
   padding: 4px 12px;
   background: rgba(99, 102, 241, 0.1);
-  color: #6366f1;
+  color: #003087;
   border-radius: 100px;
   font-weight: 600;
 }
@@ -85,7 +85,7 @@
 
 .quiz-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  background: linear-gradient(90deg, #003087, #0077cc);
   transition: width 0.3s ease;
   border-radius: 0 2px 2px 0;
 }
@@ -116,13 +116,13 @@
 }
 
 .quiz-dot:hover {
-  border-color: #6366f1;
-  color: #6366f1;
+  border-color: #003087;
+  color: #003087;
 }
 
 .dot-active {
-  border-color: #6366f1;
-  background: #6366f1;
+  border-color: #003087;
+  background: #003087;
   color: white;
 }
 
@@ -168,7 +168,7 @@
 
 .badge-multiple_choice {
   background: rgba(99, 102, 241, 0.1);
-  color: #6366f1;
+  color: #003087;
 }
 
 .badge-true_false {
@@ -182,8 +182,8 @@
 }
 
 .badge-fill_in_the_blank {
-  background: rgba(236, 72, 153, 0.1);
-  color: #ec4899;
+  background: rgba(0, 77, 177, 0.10);
+  color: #004db1;
 }
 
 .quiz-question-text {
@@ -217,7 +217,7 @@
 }
 
 .quiz-option:hover:not(:disabled) {
-  border-color: #6366f1;
+  border-color: #003087;
   background: rgba(99, 102, 241, 0.04);
 }
 
@@ -226,8 +226,8 @@
 }
 
 .option-selected {
-  border-color: #6366f1;
-  background: rgba(99, 102, 241, 0.08);
+  border-color: #003087;
+  background: rgba(0, 48, 135, 0.08);
 }
 
 .option-correct {
@@ -255,7 +255,7 @@
 }
 
 .option-selected .option-marker {
-  background: #6366f1;
+  background: #003087;
   color: white;
 }
 
@@ -295,7 +295,7 @@
 }
 
 .quiz-text-input:focus {
-  border-color: #6366f1;
+  border-color: #003087;
 }
 
 .quiz-text-input:disabled {
@@ -374,13 +374,13 @@
 }
 
 .quiz-btn-primary {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #003087, #0077cc);
   color: white;
 }
 
 .quiz-btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 173, 238, 0.30);
 }
 
 .quiz-btn-secondary {
@@ -496,7 +496,7 @@
 }
 
 .score-target {
-  color: #6366f1;
+  color: #003087;
   font-weight: 700;
 }
 

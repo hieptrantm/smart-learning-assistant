@@ -3,7 +3,7 @@
   inset: 0;
   left: 0;
   z-index: 20;
-  background: linear-gradient(135deg, #4f46e5 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #002b7a 0%, #764ba2 100%);
   color: white;
   transition: all 0.3s ease-in-out;
   overflow: hidden;

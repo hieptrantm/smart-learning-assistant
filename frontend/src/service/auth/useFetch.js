@@ -20,26 +20,33 @@ function useFetch() {
     }
 
     if (tokens?.tokenExpires && tokens.tokenExpires - 60000 <= Date.now()) {
-      const res = await fetch(authUrl("/auth/refresh"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          refresh_token: tokens.refreshToken,
-        }),
-      });
+      try {
+        const res = await fetch(authUrl("/auth/refresh"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            refresh_token: tokens.refreshToken,
+          }),
+        });
 
-      if (res.ok) {
-        const newTokens = await res.json();
-        tokens = {
-          token: newTokens.access_token || newTokens.token,
-          refreshToken: newTokens.refresh_token || newTokens.refreshToken,
-          tokenExpires: newTokens.expires_at || newTokens.tokenExpires,
-        };
-        setTokensInfo(tokens);
-        headers.Authorization = `Bearer ${tokens.token}`;
-      } else {
+        if (res.ok) {
+          const newTokens = await res.json();
+          tokens = {
+            token: newTokens.access_token || newTokens.token,
+            refreshToken: newTokens.refresh_token || newTokens.refreshToken,
+            tokenExpires: newTokens.expires_at || newTokens.tokenExpires,
+          };
+          setTokensInfo(tokens);
+          headers.Authorization = `Bearer ${tokens.token}`;
+        } else {
+          setTokensInfo(null);
+          throw new Error("Token refresh failed");
+        }
+      } catch (error) {
         setTokensInfo(null);
-        throw new Error("Token refresh failed");
+        throw new Error(
+          `Auth service unavailable while refreshing token: ${error.message}`
+        );
       }
     }
 

@@ -10,7 +10,7 @@
 }
 
 .btn-back {
-  background: linear-gradient(135deg, #4f46e5 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #002b7a 0%, #764ba2 100%);
   color: rgb(255, 255, 255);
   border: 2px solid rgba(0, 0, 0, 0.3);
   padding: 0.75rem 1.5rem;
@@ -23,7 +23,7 @@
 }
 
 .btn-back:hover {
-  background: linear-gradient(135deg, #4338ca 0%, #6b3fa0 100%);
+  background: linear-gradient(135deg, #001e5c 0%, #6b3fa0 100%);
   transform: translateX(-5px);
 }
 

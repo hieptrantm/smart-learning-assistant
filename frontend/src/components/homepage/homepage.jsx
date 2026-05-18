@@ -16,6 +16,8 @@ import {
   GraduationCap,
   Zap,
   Shield,
+  CheckCircle,
+  TrendingUp,
 } from "lucide-react";
 
 const Homepage = ({ onNavigate, user }) => {
@@ -25,54 +27,54 @@ const Homepage = ({ onNavigate, user }) => {
     {
       id: "chatbot",
       icon: <MessageSquare size={32} />,
-      title: "Chatbot RAG",
+      title: "Chatbot Giảng bài & Hỏi đáp",
       description:
-        "Trả lời câu hỏi dựa trên tài liệu môn học. Hỗ trợ tóm tắt, giải thích chi tiết, đưa ví dụ và sinh bài tập.",
-      highlights: ["Trích dẫn nguồn", "Giảm hallucination", "PDF/DOCX/PPTX"],
-      color: "#6366f1",
-      gradient: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+        "AI giảng bài trực tiếp từ slide PDF môn học của bạn. Hỏi bất kỳ điều gì — chatbot giải thích, ví dụ minh họa và kiểm tra mức độ hiểu bài sau mỗi buổi.",
+      highlights: ["Giảng bài tương tác", "Hỏi đáp thông minh", "Dựa trên tài liệu PDF"],
+      color: "#003087",
+      gradient: "linear-gradient(135deg, #003087 0%, #0077cc 100%)",
       tab: "Chatbot",
     },
     {
       id: "planner",
       icon: <CalendarCheck size={32} />,
-      title: "Study Planner",
+      title: "Lộ trình học cá nhân hóa",
       description:
-        "Tự động tạo lộ trình học tập cá nhân hóa, đồng bộ Google Calendar và gửi nhắc nhở qua Gmail.",
-      highlights: ["Google Calendar", "Nhắc nhở Gmail", "Cảnh báo tiến độ"],
+        "Hệ thống tự động xây dựng kế hoạch học tập phù hợp với thời gian rảnh và mục tiêu điểm số. Đồng bộ Google Calendar và gửi nhắc nhở qua Gmail.",
+      highlights: ["Cá nhân hóa AI", "Google Calendar", "Nhắc nhở Gmail"],
       color: "#10b981",
       gradient: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
       tab: "Planner",
     },
     {
-      id: "test",
+      id: "quiz",
       icon: <FileText size={32} />,
-      title: "Test Generator",
+      title: "Kiểm tra & Đánh giá tiến độ",
       description:
-        "Tạo bài kiểm tra trắc nghiệm & tự luận theo các cấp độ. LLM tự động điều chỉnh tiến độ dựa trên kết quả.",
-      highlights: ["Đa cấp độ", "Chấm tự động", "Phân tích điểm mạnh/yếu"],
+        "Sau mỗi buổi học, chatbot tạo bài quiz để đánh giá mức độ nắm bài. Nếu chưa đạt yêu cầu, lộ trình tự động điều chỉnh để ôn tập lại.",
+      highlights: ["Quiz tự động", "Chấm điểm AI", "Tái ôn khi cần"],
       color: "#f59e0b",
       gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-      tab: "Tests",
+      tab: "Chatbot",
     },
     {
       id: "import",
       icon: <Upload size={32} />,
-      title: "Import Tài liệu",
+      title: "Tải lên tài liệu PDF",
       description:
-        "Tải lên tài liệu PDF, DOCX, PPTX, TXT. Tự động parsing, OCR, chunking và index vào vector database.",
-      highlights: ["OCR tự động", "Chunking thông minh", "Qdrant indexing"],
-      color: "#ec4899",
-      gradient: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)",
+        "Nạp giáo trình, slide bài giảng PDF vào hệ thống. AI tự động xử lý, phân tích cấu trúc và sẵn sàng để chatbot giảng bài theo từng chương.",
+      highlights: ["Slide PDF bài giảng", "Xử lý tự động", "Phân tích theo chương"],
+      color: "#0077cc",
+      gradient: "linear-gradient(135deg, #0055a5 0%, #00adee 100%)",
       tab: "Import",
     },
     {
       id: "dashboard",
       icon: <BarChart3 size={32} />,
-      title: "Dashboard Học tập",
+      title: "Thống kê tiến độ học tập",
       description:
-        "Theo dõi tiến độ, lịch sử câu hỏi, thống kê kết quả kiểm tra và báo cáo qua email.",
-      highlights: ["Thống kê chi tiết", "Báo cáo email", "Tiến độ realtime"],
+        "Theo dõi lịch sử buổi học, điểm kiểm tra từng môn và tỷ lệ hoàn thành lộ trình. Biết rõ điểm mạnh — điểm yếu để tập trung đúng chỗ.",
+      highlights: ["Lịch sử buổi học", "Biểu đồ điểm số", "Tiến độ môn học"],
       color: "#3b82f6",
       gradient: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
       tab: "Dashboard",
@@ -80,9 +82,9 @@ const Homepage = ({ onNavigate, user }) => {
   ];
 
   const stats = [
-    { icon: <Brain size={24} />, label: "AI-Powered", value: "GPT-4 / Gemini" },
-    { icon: <BookOpen size={24} />, label: "Định dạng hỗ trợ", value: "PDF, DOCX, PPTX, TXT" },
-    { icon: <Target size={24} />, label: "Cá nhân hóa", value: "Adaptive Learning" },
+    { icon: <BookOpen size={24} />, label: "Định dạng hỗ trợ", value: "PDF Bài giảng" },
+    { icon: <Brain size={24} />, label: "Công nghệ", value: "RAG + LLM" },
+    { icon: <Target size={24} />, label: "Lộ trình", value: "Cá nhân hóa" },
     { icon: <Clock size={24} />, label: "Nhắc nhở", value: "Google Calendar & Gmail" },
   ];
 
@@ -98,18 +100,17 @@ const Homepage = ({ onNavigate, user }) => {
         <div className="hero-content">
           <div className="hero-badge">
             <Sparkles size={16} />
-            <span>Powered by AI & RAG Technology</span>
+            <span>Trợ lý học tập thông minh tích hợp AI</span>
           </div>
           <h1 className="hero-title">
             <span className="hero-title-gradient">Smart Learning</span>
             <br />
-            Agent
+            Assistant
           </h1>
           <p className="hero-subtitle">
-            Hệ thống trợ lý học tập thông minh dành cho học sinh, sinh viên và
-            người tự học. Kết hợp <strong>Chatbot RAG</strong>,{" "}
-            <strong>Study Planner</strong> và <strong>Test Generator</strong> giúp
-            bạn học hiệu quả hơn.
+            Học từ chính <strong>bài giảng</strong> của bạn — AI giảng bài, hỏi đáp,
+            xây dựng <strong>lộ trình học cá nhân hóa</strong> và kiểm tra kết quả sau
+            mỗi buổi học để giúp bạn đạt điểm mục tiêu.
           </p>
           <div className="hero-actions">
             {user ? (
@@ -149,22 +150,22 @@ const Homepage = ({ onNavigate, user }) => {
           <div className="hero-card hero-card-chat">
             <MessageSquare size={24} className="hero-card-icon" />
             <div className="hero-card-text">
-              <span className="hero-card-title">Chatbot RAG</span>
-              <span className="hero-card-desc">Hỏi đáp thông minh</span>
+              <span className="hero-card-title">Chatbot Giảng bài</span>
+              <span className="hero-card-desc">AI giải thích từ slide PDF</span>
             </div>
           </div>
           <div className="hero-card hero-card-plan">
             <CalendarCheck size={24} className="hero-card-icon" />
             <div className="hero-card-text">
-              <span className="hero-card-title">Study Planner</span>
-              <span className="hero-card-desc">Lộ trình cá nhân hóa</span>
+              <span className="hero-card-title">Lộ trình cá nhân</span>
+              <span className="hero-card-desc">Đã đồng bộ Google Calendar</span>
             </div>
           </div>
           <div className="hero-card hero-card-test">
-            <FileText size={24} className="hero-card-icon" />
+            <CheckCircle size={24} className="hero-card-icon" />
             <div className="hero-card-text">
-              <span className="hero-card-title">Test Generator</span>
-              <span className="hero-card-desc">Kiểm tra & đánh giá</span>
+              <span className="hero-card-title">Kết quả kiểm tra</span>
+              <span className="hero-card-desc">Đạt 85% — lộ trình tiếp theo sẵn sàng</span>
             </div>
           </div>
         </div>
@@ -186,9 +187,9 @@ const Homepage = ({ onNavigate, user }) => {
       {/* Features Section */}
       <section className="features-section" id="features-section">
         <div className="section-header">
-          <h2 className="section-title">Tính năng chính</h2>
+          <h2 className="section-title">Tính năng cốt lõi</h2>
           <p className="section-subtitle">
-            Tất cả công cụ bạn cần để học tập hiệu quả, được hỗ trợ bởi AI tiên tiến nhất
+            Toàn bộ công cụ học tập thông minh bạn cần — từ tiếp nhận tài liệu đến đánh giá kết quả
           </p>
         </div>
 
@@ -239,7 +240,7 @@ const Homepage = ({ onNavigate, user }) => {
         <div className="section-header">
           <h2 className="section-title">Cách hoạt động</h2>
           <p className="section-subtitle">
-            Chỉ cần 4 bước đơn giản để bắt đầu hành trình học tập thông minh
+            Chỉ 4 bước để SLA trở thành gia sư AI riêng của bạn
           </p>
         </div>
         <div className="steps-grid">
@@ -248,10 +249,10 @@ const Homepage = ({ onNavigate, user }) => {
             <div className="step-icon">
               <Upload size={28} />
             </div>
-            <h3>Import tài liệu</h3>
+            <h3>Tải lên PDF bài giảng</h3>
             <p>
-              Tải lên tài liệu môn học (PDF, DOCX, PPTX). Hệ thống tự động xử lý
-              và index nội dung.
+              Nạp slide, giáo trình PDF vào hệ thống. AI tự động phân tích và
+              xây dựng cơ sở kiến thức cho từng môn học.
             </p>
           </div>
           <div className="step-connector">
@@ -262,10 +263,10 @@ const Homepage = ({ onNavigate, user }) => {
             <div className="step-icon">
               <CalendarCheck size={28} />
             </div>
-            <h3>Lên kế hoạch</h3>
+            <h3>AI tạo lộ trình học</h3>
             <p>
-              Study Planner tạo lộ trình học tập cá nhân hóa, đồng bộ với Google
-              Calendar.
+              Study Planner xây dựng lịch học cá nhân hóa theo thời gian rảnh
+              và mục tiêu điểm. Đồng bộ Google Calendar tự động.
             </p>
           </div>
           <div className="step-connector">
@@ -276,10 +277,10 @@ const Homepage = ({ onNavigate, user }) => {
             <div className="step-icon">
               <MessageSquare size={28} />
             </div>
-            <h3>Học & Hỏi đáp</h3>
+            <h3>Học cùng Chatbot AI</h3>
             <p>
-              Chatbot RAG giải đáp mọi thắc mắc dựa trên tài liệu, có trích dẫn
-              nguồn.
+              Chatbot giảng bài từng chủ đề trong slide PDF, giải đáp thắc mắc
+              và ôn tập kiến thức theo lộ trình đã lên.
             </p>
           </div>
           <div className="step-connector">
@@ -288,12 +289,12 @@ const Homepage = ({ onNavigate, user }) => {
           <div className="step-card">
             <div className="step-number">4</div>
             <div className="step-icon">
-              <FileText size={28} />
+              <TrendingUp size={28} />
             </div>
-            <h3>Kiểm tra & Đánh giá</h3>
+            <h3>Quiz & Điều chỉnh lộ trình</h3>
             <p>
-              Tạo bài kiểm tra, đánh giá năng lực và LLM tự động điều chỉnh lộ
-              trình.
+              Cuối buổi học, AI kiểm tra nhanh mức độ hiểu bài. Nếu chưa đạt,
+              lộ trình tự động cập nhật để ôn luyện thêm.
             </p>
           </div>
         </div>
@@ -303,34 +304,34 @@ const Homepage = ({ onNavigate, user }) => {
       <section className="bottom-cta">
         <div className="cta-content">
           <div className="cta-decoration">
-            <Zap size={40} />
+            <GraduationCap size={40} />
           </div>
-          <h2>Sẵn sàng nâng cao hiệu quả học tập?</h2>
+          <h2>Sẵn sàng học thông minh hơn?</h2>
           <p>
-            Tham gia ngay để trải nghiệm hệ thống trợ lý học tập thông minh với
-            AI tiên tiến nhất.
+            Tải lên slide bài giảng PDF — SLA sẽ tự động xây dựng lộ trình học
+            và trở thành gia sư AI riêng của bạn.
           </p>
           <div className="cta-features">
             <div className="cta-feature">
-              <Shield size={18} />
-              <span>Bảo mật dữ liệu</span>
+              <BookOpen size={18} />
+              <span>Học từ tài liệu PDF</span>
             </div>
             <div className="cta-feature">
-              <Zap size={18} />
-              <span>Phản hồi tức thì</span>
+              <Target size={18} />
+              <span>Lộ trình cá nhân hóa</span>
             </div>
             <div className="cta-feature">
               <Mail size={18} />
-              <span>Nhắc nhở qua Email</span>
+              <span>Nhắc nhở qua Gmail</span>
             </div>
           </div>
           {user ? (
             <button
               className="hero-btn hero-btn-primary cta-btn"
-              onClick={() => onNavigate("Dashboard")}
+              onClick={() => onNavigate("Import")}
             >
-              <BarChart3 size={20} />
-              Vào Dashboard
+              <Upload size={20} />
+              Tải lên tài liệu ngay
               <ArrowRight size={18} />
             </button>
           ) : (
@@ -350,11 +351,10 @@ const Homepage = ({ onNavigate, user }) => {
       <footer className="homepage-footer">
         <div className="footer-content">
           <div className="footer-brand">
-            <GraduationCap size={24} />
-            <span>Smart Learning Agent</span>
+            <img src="/sla_g.png" alt="SLA" style={{ height: "32px", width: "auto" }} />
           </div>
           <p className="footer-text">
-            © 2026 Smart Learning Agent — UET VNU. Built with AI for better learning.
+            © 2026 Smart Learning Assistant — UET VNU-HN. Trợ lý học tập AI thế hệ mới.
           </p>
         </div>
       </footer>

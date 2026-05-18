@@ -92,7 +92,7 @@ CREATE TABLE study_sessions (
   status VARCHAR(30) DEFAULT 'scheduled',
   learning_status VARCHAR(30) DEFAULT 'not_started', -- not_started / passed / failed
   checkpoint_node_id VARCHAR(200),
-  score NUMERIC(3,1),
+  score NUMERIC(5,2),
   created_at TIMESTAMP DEFAULT NOW()
 );
 

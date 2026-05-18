@@ -86,7 +86,7 @@
 }
 
 .test-form select:focus {
-  border-color: #6366f1;
+  border-color: #003087;
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
@@ -116,9 +116,9 @@
 }
 
 .radio-active {
-  background: rgba(99, 102, 241, 0.08);
-  border-color: #6366f1;
-  color: #6366f1;
+  background: rgba(0, 48, 135, 0.08);
+  border-color: #003087;
+  color: #003087;
 }
 
 /* Difficulty Options */
@@ -159,8 +159,8 @@
 
 .difficulty-active.difficulty-mixed {
   background: rgba(99, 102, 241, 0.1);
-  border-color: #6366f1;
-  color: #6366f1;
+  border-color: #003087;
+  color: #003087;
 }
 
 /* Range Input */
@@ -178,9 +178,9 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #6366f1;
+  background: #003087;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 173, 238, 0.30);
 }
 
 .range-labels {
@@ -237,7 +237,7 @@
 .question-num {
   font-size: 0.8rem;
   font-weight: 700;
-  color: #6366f1;
+  color: #003087;
 }
 
 .question-diff {
@@ -280,14 +280,14 @@
 }
 
 .option-label:hover {
-  border-color: #6366f1;
+  border-color: #003087;
   background: rgba(99, 102, 241, 0.04);
 }
 
 .option-selected {
-  border-color: #6366f1;
-  background: rgba(99, 102, 241, 0.08);
-  color: #6366f1;
+  border-color: #003087;
+  background: rgba(0, 48, 135, 0.08);
+  color: #003087;
   font-weight: 600;
 }
 
@@ -331,7 +331,7 @@
 }
 
 .question-explanation svg {
-  color: #6366f1;
+  color: #003087;
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -339,7 +339,7 @@
 .submit-test-btn {
   width: 100%;
   padding: 14px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #003087, #0077cc);
   color: white;
   border: none;
   border-radius: 12px;
@@ -473,7 +473,7 @@
 /* Adaptive Note */
 .adaptive-note {
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.06), rgba(99, 102, 241, 0.06));
-  border: 1px solid rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(0, 173, 238, 0.12);
   border-radius: 16px;
   padding: 20px;
   display: flex;
@@ -482,7 +482,7 @@
 }
 
 .adaptive-note > svg {
-  color: #6366f1;
+  color: #003087;
   flex-shrink: 0;
   margin-top: 2px;
 }

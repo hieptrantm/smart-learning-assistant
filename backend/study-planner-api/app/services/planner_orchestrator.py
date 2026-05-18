@@ -106,11 +106,22 @@ async def run_full_pipeline(
 
             final_state = await _planner_agent.ainvoke(initial_state)
 
-            # Update subject status based on result
-            if final_state.get("error"):
+            # The agent may have already updated plan_status via its own DB session.
+            # Expire the ORM object so SQLAlchemy re-fetches from DB before committing,
+            # avoiding StaleDataError from concurrent updates to the same row.
+            db.expire(subject)
+
+            # Re-fetch to get the latest state from DB
+            subject = db.query(StudySubject).filter_by(id=subject_id).first()
+            if not subject:
+                logger.error(f"[orchestrator] Subject {subject_id} disappeared after agent run")
+                return
+
+            # Only override status if the agent didn't already mark it completed/failed
+            if final_state.get("error") and subject.plan_status not in ("completed",):
                 subject.plan_status = "failed"
                 logger.error(f"[orchestrator] Agent error: {final_state['error']}")
-            elif final_state.get("plan_result"):
+            elif final_state.get("plan_result") and subject.plan_status != "completed":
                 subject.plan_status = "completed"
                 subject.ingest_status = "completed"
             elif final_state.get("current_subject", {}).get("ingest_status") == "processing":
@@ -118,15 +129,22 @@ async def run_full_pipeline(
                 logger.info(
                     f"[orchestrator] Subject {subject_id} ingest still processing, skip plan generation"
                 )
-            else:
+            elif subject.plan_status == "generating":
+                # Agent finished without result or error — mark failed
                 subject.plan_status = "failed"
 
             db.commit()
 
         except Exception as e:
-            subject.plan_status = "failed"
-            db.commit()
             logger.error(f"[orchestrator] Agent execution failed: {e}")
             traceback.print_exc()
+            try:
+                db.rollback()
+                subject = db.query(StudySubject).filter_by(id=subject_id).first()
+                if subject and subject.plan_status not in ("completed",):
+                    subject.plan_status = "failed"
+                    db.commit()
+            except Exception as inner_e:
+                logger.error(f"[orchestrator] Failed to mark subject as failed: {inner_e}")
     finally:
         db.close()

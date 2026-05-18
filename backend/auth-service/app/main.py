@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import declarative_base
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 
 from app.config import CORS_ORIGINS, DATABASE_URL
 from app.controllers.auth_controller import auth_router
@@ -12,6 +12,9 @@ engine = create_engine(DATABASE_URL)
 
 
 Base.metadata.create_all(bind=engine)
+
+with engine.begin() as connection:
+    connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT"))
 
 app = FastAPI(title="Auth Service", root_path="/auth")
 

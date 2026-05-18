@@ -138,7 +138,7 @@ const Dashboard = ({ user }) => {
       .slice(0, 5);
   }, [allSessions]);
 
-  const SUBJECT_COLORS = ["#6366f1", "#10b981", "#f59e0b", "#ec4899", "#3b82f6", "#8b5cf6", "#ef4444", "#14b8a6"];
+  const SUBJECT_COLORS = ["#003087", "#10b981", "#f59e0b", "#ec4899", "#3b82f6", "#0077cc", "#ef4444", "#14b8a6"];
 
   if (loading) {
     return (
@@ -191,7 +191,7 @@ const Dashboard = ({ user }) => {
         <div className="stat-card stat-card-blue">
           <div className="stat-card-icon"><TrendingUp size={24} /></div>
           <div className="stat-card-info">
-            <span className="stat-card-value">{stats.avgScore > 0 ? `${stats.avgScore}%` : "—"}</span>
+            <span className="stat-card-value">{stats.totalTested > 0 ? `${stats.avgScore}%` : "—"}</span>
             <span className="stat-card-label">Điểm trung bình</span>
           </div>
         </div>

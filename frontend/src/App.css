@@ -1,6 +1,6 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background-color: #fafbff;
+  background-color: #f0f7ff;
   color: #0f172a;
   margin: 0;
 }
@@ -9,7 +9,7 @@ body {
 .app-container {
   display: flex;
   min-height: 100vh;
-  background-color: #fafbff;
+  background-color: #f0f7ff;
   width: 100vw;
   max-width: 100vw; 
   overflow-x: hidden;

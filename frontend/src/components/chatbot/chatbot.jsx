@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { usePlannerService } from "../../service/planner/usePlannerService";
 import { useChatbotService } from "../../service/chatbot/useChatbotService";
+import { useRequestCalendarToken } from "../../service/auth/googleAuth";
+import { getGoogleToken } from "../../service/auth/googleToken";
 import QuizPopup from "../quiz-popup/quiz-popup";
 import toast from "react-hot-toast";
 
@@ -60,6 +62,29 @@ const Chatbot = ({ user }) => {
 
   // Quiz state
   const [quizQuestions, setQuizQuestions] = useState([]);
+
+  // Passed confirmation popup
+  const [passedConfirmState, setPassedConfirmState] = useState(null);
+  // { session, score, targetScore }
+  const pendingPassedConfirmRef = useRef(null);
+
+  // Calendar sync pending state — shown when generatePlan is called but no token
+  const [calendarSyncPending, setCalendarSyncPending] = useState(null); // { subjectId }
+  const calendarSyncSubjectRef = useRef(null);
+
+  const requestCalendarToken = useRequestCalendarToken(async () => {
+    const subjectId = calendarSyncSubjectRef.current;
+    calendarSyncSubjectRef.current = null;
+    setCalendarSyncPending(null);
+    if (subjectId) {
+      try {
+        await generatePlan(subjectId);
+        toast.success("Lộ trình học đã được tạo và thêm vào Google Calendar!", { duration: 5000 });
+      } catch (err) {
+        toast.error("Lỗi khi tạo lộ trình: " + err.message);
+      }
+    }
+  }, user?.email);
 
   const { getSubjects, getStudyPlan } = usePlannerService();
   const { streamChat, evaluateAnswer, updateSessionLearningStatus, generatePlan } = useChatbotService();
@@ -106,7 +131,7 @@ const Chatbot = ({ user }) => {
           setPlanSessions(plan.sessions);
           // Auto-select first not_started session
           const nextSession = plan.sessions.find(
-            (s) => s.learning_status === "not_started" || s.status === "scheduled"
+            (s) => s.learning_status === "not_started"
           );
           setSelectedPlanSession(nextSession || null);
           setShowSessions(true);
@@ -247,24 +272,35 @@ const Chatbot = ({ user }) => {
     const passed = percentage >= targetScore;
 
     try {
-      // Use the selected plan session if available, otherwise fall back to finding one
-      let currentSession = selectedPlanSession;
+      // Always fetch fresh session from DB to avoid stale IDs after plan regeneration
+      let currentSession = null;
+      const freshPlan = await getStudyPlan(selectedSubjectId);
+      if (freshPlan?.sessions?.length > 0) {
+        // Only match sessions not yet studied — status is never updated so don't use it as a condition
+        currentSession = freshPlan.sessions.find(
+          (s) => s.learning_status === "not_started"
+        );
+      }
+      // Fallback to selectedPlanSession if no fresh session found
       if (!currentSession) {
-        const plan = await getStudyPlan(selectedSubjectId);
-        if (plan?.sessions?.length > 0) {
-          currentSession = plan.sessions.find(
-            (s) => s.status === "scheduled" || s.learning_status === "not_started"
-          );
-        }
+        currentSession = selectedPlanSession;
       }
 
       if (currentSession) {
         await updateSessionLearningStatus(currentSession.id, passed ? "passed" : "failed", percentage);
         if (!passed) {
-          await generatePlan(selectedSubjectId);
-          toast(`Bạn đạt ${percentage}% (mục tiêu: ${targetScore}%). Lộ trình học đã được tạo lại.`, { duration: 4000 });
+          const tokenData = getGoogleToken();
+          if (!tokenData?.google_access_token) {
+            calendarSyncSubjectRef.current = selectedSubjectId;
+            setCalendarSyncPending({ subjectId: selectedSubjectId });
+            toast(`Bạn đạt ${percentage}% (mục tiêu: ${targetScore}%). Kết nối Calendar để tạo lại lịch học.`, { duration: 4000 });
+          } else {
+            await generatePlan(selectedSubjectId);
+            toast(`Bạn đạt ${percentage}% (mục tiêu: ${targetScore}%). Lộ trình học đã được tạo lại.`, { duration: 4000 });
+          }
         } else {
-          toast.success(`Xuất sắc! Bạn đạt ${percentage}% (mục tiêu: ${targetScore}%). Phiên học hoàn thành.`);
+          // Store pending confirm — will show after quiz popup closes
+          pendingPassedConfirmRef.current = { session: currentSession, score: percentage, targetScore };
         }
       }
     } catch (err) {
@@ -276,7 +312,71 @@ const Chatbot = ({ user }) => {
     setSessionState(SESSION_STATE.IDLE);
     setQuizQuestions([]);
     setMessages([]);
+    // If quiz was passed, show the "continue or rest" confirmation popup
+    if (pendingPassedConfirmRef.current) {
+      setPassedConfirmState(pendingPassedConfirmRef.current);
+      pendingPassedConfirmRef.current = null;
+    }
   };
+
+  // "Nghỉ" — session already marked passed; just update local UI
+  const handleConfirmRest = useCallback(() => {
+    const confirm = passedConfirmState;
+    setPassedConfirmState(null);
+    toast.success(
+      `Xuất sắc! Bạn đạt ${confirm.score}% (mục tiêu: ${confirm.targetScore}%). Hẹn gặp lại buổi học tiếp theo!`
+    );
+    setPlanSessions((prev) =>
+      prev.map((s) =>
+        s.id === confirm.session?.id ? { ...s, learning_status: "passed", score: confirm.score } : s
+      )
+    );
+    setSelectedPlanSession(null);
+  }, [passedConfirmState]);
+
+  // Skip calendar sync — generate plan without calendar events
+  const handleCalendarSyncSkip = useCallback(async () => {
+    const subjectId = calendarSyncPending?.subjectId;
+    calendarSyncSubjectRef.current = null;
+    setCalendarSyncPending(null);
+    if (subjectId) {
+      try {
+        await generatePlan(subjectId);
+        toast.success("Đang tạo lộ trình học. Lộ trình sẽ được cập nhật sau ít phút!", { duration: 5000 });
+      } catch (err) {
+        toast.error("Lỗi khi tạo lộ trình: " + err.message);
+      }
+    }
+  }, [calendarSyncPending, generatePlan]);
+
+  // "Học tiếp" — run planner from checkpoint of the just-passed session
+  const handleConfirmContinue = useCallback(async () => {
+    const confirm = passedConfirmState;
+    setPassedConfirmState(null);
+    // Mark session as passed in UI immediately regardless of calendar sync
+    setPlanSessions((prev) =>
+      prev.map((s) =>
+        s.id === confirm.session?.id ? { ...s, learning_status: "passed", score: confirm.score } : s
+      )
+    );
+    setSelectedPlanSession(null);
+
+    const tokenData = getGoogleToken();
+    if (!tokenData?.google_access_token) {
+      calendarSyncSubjectRef.current = selectedSubjectId;
+      setCalendarSyncPending({ subjectId: selectedSubjectId });
+    } else {
+      try {
+        await generatePlan(selectedSubjectId);
+        toast.success(
+          "Đang tạo thêm nội dung học tiếp. Lộ trình học sẽ được cập nhật, vui lòng làm mới sau ít phút!",
+          { duration: 5000 }
+        );
+      } catch (err) {
+        toast.error("Lỗi khi tạo kế hoạch học tiếp: " + err.message);
+      }
+    }
+  }, [passedConfirmState, selectedSubjectId, generatePlan]);
 
   // Send chat message
   const handleSend = async () => {
@@ -647,6 +747,60 @@ const Chatbot = ({ user }) => {
           onFinish={handleQuizFinish}
           evaluateAnswer={evaluateAnswer}
         />
+      )}
+
+      {/* Passed — Continue or Rest confirmation popup */}
+      {passedConfirmState && (
+        <div className="passed-confirm-overlay">
+          <div className="passed-confirm-popup">
+            <div className="passed-confirm-icon">🎉</div>
+            <h3>Hoàn thành xuất sắc!</h3>
+            <p className="passed-confirm-score">Điểm số: {passedConfirmState.score}%</p>
+            <p className="passed-confirm-message">
+              Bạn đã học sớm buổi học ngày{" "}
+              <strong>
+                {passedConfirmState.session?.session_date
+                  ? new Date(passedConfirmState.session.session_date + "T00:00:00").toLocaleDateString(
+                      "vi-VN",
+                      { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" }
+                    )
+                  : "hôm nay"}
+              </strong>
+              . Bạn có muốn học tiếp buổi đó không hay nghỉ?
+            </p>
+            <div className="passed-confirm-actions">
+              <button className="passed-confirm-btn passed-confirm-btn-rest" onClick={handleConfirmRest}>
+                ☕ Nghỉ
+              </button>
+              <button
+                className="passed-confirm-btn passed-confirm-btn-continue"
+                onClick={handleConfirmContinue}
+              >
+                <Play size={14} /> Học tiếp
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {calendarSyncPending && (
+        <div className="calendar-sync-overlay">
+          <div className="calendar-sync-popup">
+            <div className="calendar-sync-icon">📅</div>
+            <h3>Đồng bộ Google Calendar</h3>
+            <p className="calendar-sync-message">
+              Kết nối Google Calendar để tự động thêm lịch học mới vào lịch của bạn.
+            </p>
+            <div className="calendar-sync-actions">
+              <button className="calendar-sync-btn calendar-sync-btn-skip" onClick={handleCalendarSyncSkip}>
+                Bỏ qua
+              </button>
+              <button className="calendar-sync-btn calendar-sync-btn-connect" onClick={() => requestCalendarToken()}>
+                📅 Kết nối Calendar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

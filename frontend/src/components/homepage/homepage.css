@@ -14,7 +14,7 @@
   justify-content: space-between;
   padding: 80px 60px 60px;
   min-height: 85vh;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  background: linear-gradient(135deg, #001144 0%, #002060 45%, #003087 100%);
   overflow: hidden;
   gap: 60px;
 }
@@ -36,7 +36,7 @@
 .hero-circle-1 {
   width: 500px;
   height: 500px;
-  background: #6366f1;
+  background: #0077cc;
   top: -200px;
   right: -100px;
 }
@@ -44,7 +44,7 @@
 .hero-circle-2 {
   width: 400px;
   height: 400px;
-  background: #10b981;
+  background: #00adee;
   bottom: -150px;
   left: -100px;
 }
@@ -52,7 +52,7 @@
 .hero-circle-3 {
   width: 300px;
   height: 300px;
-  background: #f59e0b;
+  background: #003087;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -70,10 +70,10 @@
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: rgba(99, 102, 241, 0.15);
-  border: 1px solid rgba(99, 102, 241, 0.3);
+  background: rgba(0, 173, 238, 0.15);
+  border: 1px solid rgba(0, 173, 238, 0.40);
   border-radius: 100px;
-  color: #a5b4fc;
+  color: #7dd3fc;
   font-size: 13px;
   font-weight: 500;
   margin-bottom: 24px;
@@ -90,7 +90,7 @@
 }
 
 .hero-title-gradient {
-  background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+  background: linear-gradient(135deg, #00adee 0%, #60c4f8 50%, #93d9ff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -128,14 +128,14 @@
 }
 
 .hero-btn-primary {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #0077cc 0%, #00adee 100%);
   color: white;
-  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 119, 204, 0.45);
 }
 
 .hero-btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 8px 30px rgba(0, 173, 238, 0.55);
 }
 
 .hero-btn-secondary {
@@ -179,12 +179,12 @@
 }
 
 .hero-card-chat {
-  background: rgba(99, 102, 241, 0.15);
+  background: rgba(0, 119, 204, 0.18);
   animation-delay: 0s;
 }
 
 .hero-card-chat .hero-card-icon {
-  color: #818cf8;
+  color: #60c4f8;
 }
 
 .hero-card-plan {
@@ -253,7 +253,7 @@
   height: 48px;
   border-radius: 12px;
   background: #f1f5f9;
-  color: #6366f1;
+  color: #003087;
 }
 
 .stat-info {
@@ -337,7 +337,7 @@
 }
 
 .feature-card-hovered::before {
-  background: var(--feature-gradient, linear-gradient(135deg, #6366f1, #8b5cf6));
+  background: var(--feature-gradient, linear-gradient(135deg, #003087, #0077cc));
 }
 
 .feature-icon-wrapper {
@@ -438,7 +438,7 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #003087, #0077cc);
   color: white;
   font-size: 13px;
   font-weight: 700;
@@ -454,7 +454,7 @@
   width: 56px;
   height: 56px;
   border-radius: 16px;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #003087 0%, #0077cc 100%);
   color: white;
   margin: 0 auto 16px;
 }
@@ -499,7 +499,7 @@
   width: 72px;
   height: 72px;
   border-radius: 20px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #003087, #0077cc);
   color: white;
   margin-bottom: 24px;
 }
@@ -531,7 +531,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #a5b4fc;
+  color: #93c5fd;
   font-size: 14px;
   font-weight: 500;
 }

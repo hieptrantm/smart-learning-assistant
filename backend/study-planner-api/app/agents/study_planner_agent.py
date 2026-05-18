@@ -297,26 +297,35 @@ class StudyPlannerAgent:
                 plan_result = state.get("plan_result", [])
 
                 session_rows = ""
-                for ev in plan_result:
+                for idx, ev in enumerate(plan_result):
                     start_dt = ev.get("start", {}).get("dateTime", "")
                     end_dt = ev.get("end", {}).get("dateTime", "")
+                    date_str, time_start = self._format_dt_vn(start_dt)
+                    _, time_end = self._format_dt_vn(end_dt)
+                    row_bg = "#f8fafc" if idx % 2 == 0 else "#ffffff"
                     session_rows += EMAIL_SESSION_ROW.format(
-                        start=start_dt, end=end_dt,
+                        date=date_str,
+                        time_start=time_start,
+                        time_end=time_end,
                         summary=ev.get("summary", ""),
                         description=ev.get("description", ""),
+                        row_bg=row_bg,
+                        idx=idx + 1,
                     )
+
+                user_email, username = self._get_user_info(state)
+                total_sessions = len(plan_result)
 
                 html_content = EMAIL_BODY_TEMPLATE.format(
                     subject_name=subject.get("name", ""),
                     target_grade=subject.get("target_grade", 7),
+                    total_sessions=total_sessions,
+                    username=username,
                     session_rows=session_rows,
                 )
                 email_subject = EMAIL_SUBJECT_TEMPLATE.format(
                     subject_name=subject.get("name", ""),
                 )
-
-                # Get user email from DB
-                user_email = self._get_user_email(state)
 
                 new_calls = list(tool_calls)
                 new_calls.append({
@@ -362,16 +371,44 @@ class StudyPlannerAgent:
         return {"current_step": "end", "previous_step": "observation"}
 
     def _get_user_email(self, state: PlannerStateDict) -> str:
-        """Fetch user email from DB."""
+        """Fetch user email from DB (legacy, use _get_user_info instead)."""
+        email, _ = self._get_user_info(state)
+        return email
+
+    def _get_user_info(self, state: PlannerStateDict) -> tuple[str, str]:
+        """Fetch (email, username) from DB."""
         engine = create_engine(state["db_url"], pool_pre_ping=True)
         with DBSession(engine) as db:
             row = db.execute(
                 __import__("sqlalchemy").text(
-                    "SELECT email FROM users WHERE id = :uid LIMIT 1"
+                    "SELECT email, username FROM users WHERE id = :uid LIMIT 1"
                 ),
                 {"uid": state.get("user_id")},
             ).fetchone()
-            return row[0] if row else ""
+            if row:
+                return row[0] or "", row[1] or "bạn"
+            return "", "bạn"
+
+    @staticmethod
+    def _format_dt_vn(iso_str: str) -> tuple[str, str]:
+        """Parse ISO datetime string and return (date_vn, time_str).
+        e.g. '2025-01-15T08:00:00+07:00' -> ('Thứ 4, 15/01/2025', '08:00')
+        """
+        try:
+            from datetime import datetime, timezone, timedelta
+            dt = datetime.fromisoformat(iso_str)
+            # Ensure UTC+7
+            vn_tz = timezone(timedelta(hours=7))
+            dt = dt.astimezone(vn_tz)
+            day_names = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"]
+            day_vn = day_names[dt.weekday()]
+            date_str = f"{day_vn}, {dt.day:02d}/{dt.month:02d}/{dt.year}"
+            time_str = dt.strftime("%H:%M")
+            return date_str, time_str
+        except Exception:
+            # fallback: return raw string split
+            parts = iso_str.split("T")
+            return parts[0] if parts else iso_str, parts[1][:5] if len(parts) > 1 else ""
 
     # ── Node: planner ──────────────────────────────────────────
 

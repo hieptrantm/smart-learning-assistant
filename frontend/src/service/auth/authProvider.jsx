@@ -82,10 +82,13 @@ function AuthProvider(props) {
         console.log("User data loaded:", data);
         setUser(data);
       }
+    } catch (err) {
+      console.error("Failed to initialize auth session:", err);
+      setTokensInfo(null);
     } finally {
       setIsLoaded(true);
     }
-  }, [fetchBase, logOut]);
+  }, [fetchBase, logOut, setTokensInfo]);
 
   const refreshUser = useCallback(async () => {
     const tokens = getTokensInfo();

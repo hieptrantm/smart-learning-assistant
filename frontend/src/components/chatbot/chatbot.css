@@ -62,7 +62,7 @@
 
 .subject-btn-active {
   background: rgba(99, 102, 241, 0.1);
-  color: #6366f1;
+  color: #003087;
   font-weight: 600;
 }
 
@@ -166,12 +166,12 @@
 
 /* Not started — prominent */
 .plan-session-not-started {
-  border-color: #6366f1;
+  border-color: #003087;
   background: rgba(99, 102, 241, 0.03);
 }
 
 .plan-session-not-started .plan-session-status-icon {
-  color: #6366f1;
+  color: #003087;
 }
 
 .plan-session-not-started .plan-session-title {
@@ -181,9 +181,9 @@
 
 /* Selected */
 .plan-session-selected {
-  border-color: #6366f1;
+  border-color: #003087;
   background: rgba(99, 102, 241, 0.06);
-  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 0 0 1px rgba(0, 173, 238, 0.12);
 }
 
 /* Passed — visible but completed look */
@@ -308,7 +308,7 @@
 
 /* Session info panel */
 .session-info-panel {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.08));
+  background: linear-gradient(135deg, rgba(0, 48, 135, 0.08), rgba(139, 92, 246, 0.08));
   border-radius: 12px;
   padding: 16px;
   display: flex;
@@ -320,14 +320,14 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #6366f1;
+  color: #003087;
 }
 
 .timer-display {
   font-size: 1.4rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  color: #6366f1;
+  color: #003087;
 }
 
 .session-subject-label {
@@ -422,7 +422,7 @@
 }
 
 .welcome-icon {
-  color: #6366f1;
+  color: #003087;
   margin-bottom: 16px;
 }
 
@@ -461,7 +461,7 @@
 }
 
 .feature-item svg {
-  color: #6366f1;
+  color: #003087;
   flex-shrink: 0;
 }
 
@@ -495,10 +495,10 @@
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: rgba(99, 102, 241, 0.08);
+  background: rgba(0, 48, 135, 0.08);
   border-radius: 100px;
   font-size: 0.8rem;
-  color: #6366f1;
+  color: #003087;
   font-weight: 500;
 }
 
@@ -529,7 +529,7 @@
 }
 
 .chat-message-assistant .message-avatar {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #003087, #0077cc);
   color: white;
 }
 
@@ -561,7 +561,7 @@
 }
 
 .chat-message-user .message-bubble {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #003087, #0077cc);
   color: white;
   border-top-right-radius: 4px;
 }
@@ -602,7 +602,7 @@
 
 .msg-action-btn:hover {
   background: #f1f5f9;
-  color: #6366f1;
+  color: #003087;
 }
 
 /* Typing / Thinking Indicators */
@@ -656,7 +656,7 @@
 }
 
 .chat-input-wrapper:focus-within {
-  border-color: #6366f1;
+  border-color: #003087;
   background: white;
 }
 
@@ -682,7 +682,7 @@
   width: 36px;
   height: 36px;
   border: none;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #003087, #0077cc);
   color: white;
   border-radius: 10px;
   cursor: pointer;
@@ -695,7 +695,7 @@
 
 .send-btn:hover:not(:disabled) {
   transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 48, 135, 0.35);
 }
 
 .send-btn:disabled {
@@ -724,4 +724,179 @@
   .message-content {
     max-width: 85%;
   }
+}
+
+/* ===== Passed Confirmation Popup ===== */
+
+.passed-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.passed-confirm-popup {
+  background: white;
+  border-radius: 20px;
+  padding: 36px 32px;
+  max-width: 460px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  animation: passedPopupIn 0.22s ease;
+}
+
+@keyframes passedPopupIn {
+  from { opacity: 0; transform: scale(0.9) translateY(-16px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.passed-confirm-icon {
+  font-size: 3rem;
+  margin-bottom: 12px;
+}
+
+.passed-confirm-popup h3 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px;
+}
+
+.passed-confirm-score {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #10b981;
+  margin: 0 0 16px;
+}
+
+.passed-confirm-message {
+  font-size: 0.95rem;
+  color: #475569;
+  line-height: 1.65;
+  margin: 0 0 28px;
+}
+
+.passed-confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.passed-confirm-btn {
+  padding: 12px 28px;
+  border-radius: 10px;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.passed-confirm-btn-rest {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.passed-confirm-btn-rest:hover {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.passed-confirm-btn-continue {
+  background: #003087;
+  color: white;
+}
+
+.passed-confirm-btn-continue:hover {
+  background: #002b7a;
+}
+
+.passed-confirm-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Calendar sync popup ──────────────────────────────────────────────────── */
+.calendar-sync-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2100;
+  padding: 20px;
+}
+
+.calendar-sync-popup {
+  background: white;
+  border-radius: 20px;
+  padding: 36px 32px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  animation: passedPopupIn 0.22s ease;
+}
+
+.calendar-sync-icon {
+  font-size: 2.8rem;
+  margin-bottom: 12px;
+}
+
+.calendar-sync-popup h3 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 10px;
+}
+
+.calendar-sync-message {
+  font-size: 0.95rem;
+  color: #475569;
+  line-height: 1.65;
+  margin: 0 0 28px;
+}
+
+.calendar-sync-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.calendar-sync-btn {
+  padding: 12px 24px;
+  border-radius: 10px;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.calendar-sync-btn-skip {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.calendar-sync-btn-skip:hover {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.calendar-sync-btn-connect {
+  background: #4285f4;
+  color: white;
+}
+
+.calendar-sync-btn-connect:hover {
+  background: #3367d6;
 }
