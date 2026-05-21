@@ -37,6 +37,8 @@ class AgentStateDict(TypedDict):
     tool_calls: List[Dict[str, Any]]
     tool_results: List[Dict[str, Any]]
     session_id: Optional[str]
+    subject_id: Optional[str]
+    
     timestamp: datetime
     metadata: Dict[str, Any]
     config: RunnableConfig
@@ -211,7 +213,7 @@ class TutorAgent(BaseLangGraphAgent):
                     
             tools_context = state.get("tool_results", [])    
             last_tool_result = tools_context[-1] if tools_context else None
-            # logger.info(f"Last tool result: {last_tool_result}")
+            logger.info(f"Last tool result: {last_tool_result}")
             tools_context_str = ""
             if last_tool_result:
                 tools_context_str = f"""
@@ -219,6 +221,8 @@ class TutorAgent(BaseLangGraphAgent):
 Trạng thái: {last_tool_result.get("success", "")}
 Kết quả: {last_tool_result.get("result", "")}
                 """
+                
+            logger.info(f"[{session_id}] Tools context string: {tools_context_str[:200]}...")
 
             # Combine all context steps
             aggregated_context = (
@@ -260,7 +264,7 @@ Kết quả: {last_tool_result.get("result", "")}
                     tool_descriptions=tool_description
                 )
                 
-                logger.info(f"[LLM NODE][{session_id}] System prompt created successfully: \n{system_prompt}")
+                # logger.info(f"[LLM NODE][{session_id}] System prompt created successfully: \n{system_prompt}")
             except Exception as e:
                 logger.error(f"[LLM NODE][{session_id}] Error formatting system prompt: {e}")
                 system_prompt = self.system_prompt.format(tool_descriptions="")
@@ -273,7 +277,7 @@ Kết quả: {last_tool_result.get("result", "")}
                 request=message_content,
                 history=aggregated_context,
                 tool_results=tools_context_str,
-                subject_id=self.subject_id,
+                subject_id=self.subject_id or "unknown",
                 lecture_title=self.lecture_title or "Không có",
                 lecture_content=self.lecture_content or "Không có"
             )
@@ -463,7 +467,7 @@ Kết quả: {last_tool_result.get("result", "")}
                     # Execute the tool
                     try:
                         result = (await tool.ainvoke(last_parameters))
-                        # logger.info(f"[{session_id}] Tool {last_tool_name} executed successfully with result: {result}")
+                        logger.info(f"[{session_id}] Tool {last_tool_name} executed successfully with result: {result}")
                     except Exception as e:
                         logger.error(f"[{session_id}] Error executing tool {last_tool_name}: {e}")
                         result = {
@@ -517,6 +521,9 @@ Kết quả: {last_tool_result.get("result", "")}
 
             if tool_result:
                 state["tool_results"].append(tool_result)
+                logger.info(f"[{session_id}] Tool result add successful for {last_tool_name}: success={tool_result['success']}, error={tool_result['error']}")
+                logger.info(f"[{session_id}] Detail: {tool_result}")
+                logger.info(f"[{session_id}] Tool results in state: {state['tool_results']}")
 
                 # Add tool result as an AI message
                 if tool_result["success"]:
@@ -524,6 +531,7 @@ Kết quả: {last_tool_result.get("result", "")}
                 else:
                     result_message = f"Tool {last_tool_name} failed: {tool_result['error']}"
 
+                logger.info(f"[{session_id}] Adding tool result to messages: {result_message}")
                 state["messages"].append(
                     ToolMessage(
                         content=f"Tool {last_tool_name} executed successfully", tool_call_id=last_tool_call_id
@@ -534,6 +542,9 @@ Kết quả: {last_tool_result.get("result", "")}
             else:
                 # Tool not found
                 error_message = f"Tool '{last_tool_name}' not found"
+                logger.info(f"[{session_id}] Tool result add failed for {last_tool_name}: success={tool_result['success']}, error={tool_result['error']}")
+                # logger.info(f"[{session_id}] Detail: {tool_result}")
+                logger.info(f"[{session_id}] Tool results in state: {state['tool_results']}")
                 state["messages"].append(
                     ToolMessage(
                         content=error_message, tool_call_id=last_tool_call_id
@@ -757,7 +768,7 @@ Kết quả: {last_tool_result.get("result", "")}
                 "error": None,
                 "tool_calls": [],
                 "tool_results": [],
-                "session_id": session_id,
+                "session_id": session_id,                
                 "timestamp": datetime.now(),
                 "metadata": {},
                 "config": config_session,

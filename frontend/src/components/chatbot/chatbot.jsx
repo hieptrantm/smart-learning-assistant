@@ -4,7 +4,6 @@ import {
   Send,
   BookOpen,
   Bot,
-  User,
   Copy,
   FileText,
   Play,
@@ -35,6 +34,18 @@ const SESSION_STATE = {
 };
 
 const Chatbot = ({ user }) => {
+  const displayName = user?.username || user?.email || "User";
+  const userAvatarInitials = (() => {
+    const source = (user?.username || user?.email || "U").trim();
+    const parts = source.split(/\s+/).filter(Boolean);
+
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+
+    return source.slice(0, 2).toUpperCase();
+  })();
+
   // Chat state
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState("");
@@ -466,6 +477,31 @@ const Chatbot = ({ user }) => {
     return <div className="message-text" dangerouslySetInnerHTML={{ __html: html }} />;
   };
 
+  const renderMessageAvatar = (role) => {
+    if (role === "assistant") {
+      return (
+        <img
+          src="/sla_g.png"
+          alt="SLA"
+          className="message-avatar-image message-avatar-brand"
+        />
+      );
+    }
+
+    if (user?.avatar_url) {
+      return (
+        <img
+          src={user.avatar_url}
+          alt={displayName}
+          className="message-avatar-image"
+          referrerPolicy="no-referrer"
+        />
+      );
+    }
+
+    return <span className="message-avatar-fallback">{userAvatarInitials}</span>;
+  };
+
   return (
     <div className="chatbot">
       {/* Sidebar */}
@@ -678,7 +714,7 @@ const Chatbot = ({ user }) => {
                 return (
                   <div key={msg.id} className={`chat-message chat-message-${msg.role}`}>
                     <div className="message-avatar">
-                      {msg.role === "assistant" ? <Bot size={20} /> : <User size={20} />}
+                      {renderMessageAvatar(msg.role)}
                     </div>
                     <div className="message-content">
                       <div className="message-bubble">
@@ -704,7 +740,7 @@ const Chatbot = ({ user }) => {
 
               {isThinking && !messages.some((m) => m.streaming && !m.content) && (
                 <div className="chat-message chat-message-assistant">
-                  <div className="message-avatar"><Bot size={20} /></div>
+                  <div className="message-avatar">{renderMessageAvatar("assistant")}</div>
                   <div className="message-content">
                     <div className="message-bubble">
                     </div>

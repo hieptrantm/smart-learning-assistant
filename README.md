@@ -32,7 +32,7 @@ The system is built on a **microservices** architecture with four core business 
 
 | Feature | Preview |
 |---------|---------|
-| Main Interface | ![Demo placeholder](https://placehold.co/800x450?text=Smart+Learning+Assistant+Demo) |
+| Main Interface | ![Demo screenshot](demo.png) |
 
 > 🎬 **Full video demo:** _(Coming soon after deployment)_
 

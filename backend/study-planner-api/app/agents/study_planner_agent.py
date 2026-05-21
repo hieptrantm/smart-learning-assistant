@@ -308,7 +308,7 @@ class StudyPlannerAgent:
                         time_start=time_start,
                         time_end=time_end,
                         summary=ev.get("summary", ""),
-                        description=ev.get("description", ""),
+                        description=ev.get("description", "")[:100] + ("..." if len(ev.get("description", "")) > 100 else ""),
                         row_bg=row_bg,
                         idx=idx + 1,
                     )

@@ -526,6 +526,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .chat-message-assistant .message-avatar {
@@ -536,6 +537,25 @@
 .chat-message-user .message-avatar {
   background: linear-gradient(135deg, #10b981, #059669);
   color: white;
+}
+
+.message-avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.message-avatar-brand {
+  object-fit: contain;
+  padding: 6px;
+  background: white;
+}
+
+.message-avatar-fallback {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 .message-content {

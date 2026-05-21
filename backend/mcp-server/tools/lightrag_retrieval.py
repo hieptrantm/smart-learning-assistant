@@ -5,6 +5,7 @@ from typing import Annotated, List, Dict, Any, Optional, Tuple
 from llm.base import BaseLLM
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from langchain_qdrant import RetrievalMode
+from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
 
 from vectordb.engine import VectorDBEngine
 from graph_db.engine import GraphDBEngine
@@ -155,24 +156,24 @@ class LightRAGRetrieval:
                 list(source_chunk_ids),
             )
 
-            return json.dumps({
+            return {
                 "success": True,
                 "tool_name": "lightRAG_retrieval",
                 "content": "Tool lightRAG retrieval successful. The result has been displayed.",
                 "query": query,
                 "results_count": merged_context.get("results_count", 0),
                 "tool_result": merged_context.get("tool_result", ""),
-            }, ensure_ascii=False, indent=2)
+            }
         except Exception as e:
             logger.error(f"Error in LightRAG retrieval: {e}")
-            return json.dumps({
+            return {
                 "success": False,
                 "tool_name": "lightRAG_retrieval",
                 "content": "",
                 "query": query,
                 "results_count": 0,
                 "tool_result": "",
-            }, ensure_ascii=False, indent=2)
+            }
 
     def _doc_matches_chunk_filter(self, doc: Dict[str, Any], allowed_chunk_ids: List[str]) -> bool:
         metadata = doc.get("metadata", {}) or {}
@@ -198,7 +199,7 @@ class LightRAGRetrieval:
         """Extract local + global keywords via LLM, fallback to raw query"""
         try:
             prompt = KEYWORD_PROMPT.format(query=query)
-            response = await asyncio.to_thread(self.llm.invoke, prompt)
+            response = await asyncio.to_thread(self.llm.invoke, BaseMessage(content=prompt))
             data = json.loads(response.content)
             return data.get("local_keywords", []), data.get("global_keywords", [])
         except Exception as e:

@@ -37,7 +37,7 @@ qa_prompt_agent: |
   # INPUT
   - ID Môn học hiện tại: {subject_id}
 
-  - Nội Buổi học hiện tại:
+  - Nội dung Buổi học hiện tại:
   Tiêu đề: {lecture_title}
   Nội dung: {lecture_content}
 
