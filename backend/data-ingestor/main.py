@@ -15,7 +15,7 @@ from datetime import date as date_type
 
 from neo4j import GraphDatabase
 from qdrant_client import QdrantClient
-from qdrant_client.http.models import Distance, VectorParams, SparseVectorParams
+from qdrant_client.http.models import Distance, VectorParams, SparseVectorParams, Filter, FieldCondition, MatchValue
 from qdrant_client.http import models as qdrant_models
 from langchain_core.documents import Document
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
@@ -156,6 +156,77 @@ async def _run_ingest_job(job_id: str, file_path: str, subject: str, language: s
         # Clean up uploaded file
         if os.path.exists(file_path):
             os.remove(file_path)
+
+
+# ── Helper functions for deletion ─────────────────────────────
+
+def _delete_from_qdrant(subject_name: str):
+    """
+    Delete all vectors for a subject from all 3 Qdrant collections:
+    - raw_chunks
+    - low-level-retrieval (LOWLEVEL_COLLECTION_NAME)
+    - high-level-retrieval (HIGHLEVEL_COLLECTION_NAME)
+    
+    Uses subject_id filter (which is the subject_name in metadata).
+    """
+    try:
+        collections = [
+            RAW_CHUNKS_COLLECTION_NAME,
+            LOWLEVEL_COLLECTION_NAME,
+            HIGHLEVEL_COLLECTION_NAME
+        ]
+        
+        for collection_name in collections:
+            try:
+                # Delete points where metadata.subject_id matches the subject_name
+                filter_condition = Filter(
+                    must=[
+                        FieldCondition(
+                            key="metadata.subject_id",
+                            match=MatchValue(value=subject_name)
+                        )
+                    ]
+                )
+                
+                deleted_count = indexing_engine.qdrant.delete(
+                    collection_name=collection_name,
+                    points_selector=filter_condition
+                )
+                print(f"[Qdrant] Deleted {deleted_count} points from collection '{collection_name}' for subject '{subject_name}'")
+            except Exception as e:
+                print(f"[Qdrant] Warning: Could not delete from collection '{collection_name}': {e}")
+                
+    except Exception as e:
+        print(f"[Qdrant] Error during deletion: {e}")
+
+
+def _delete_from_neo4j(subject_name: str):
+    """
+    Delete all nodes and relationships for a subject from Neo4j.
+    
+    Deletes from:
+    1. Knowledge graph: nodes with subject_id = subject_name
+    2. Tree graph: nodes with subject_id = subject_name_tree
+    """
+    try:
+        with neo4j_client.session() as session:
+            # Delete from Knowledge graph
+            session.run(
+                "MATCH (n:Entity {subject_id: $subject_id}) DETACH DELETE n",
+                subject_id=subject_name
+            )
+            print(f"[Neo4j] Deleted Knowledge graph nodes for subject_id='{subject_name}'")
+            
+            # Delete from Tree graph
+            tree_subject_id = f"{subject_name}_tree"
+            session.run(
+                "MATCH (n {subject_id: $subject_id}) DETACH DELETE n",
+                subject_id=tree_subject_id
+            )
+            print(f"[Neo4j] Deleted Tree graph nodes for subject_id='{tree_subject_id}'")
+            
+    except Exception as e:
+        print(f"[Neo4j] Error during deletion: {e}")
 
 
 # ── Endpoints ─────────────────────────────────────────────────
@@ -340,9 +411,26 @@ def delete_subject(
     subject = db.query(StudySubject).filter_by(id=subject_id, user_id=user_id).first()
     if not subject:
         raise HTTPException(404, "Subject not found")
+    
+    # Get subject name before deletion (needed for Qdrant and Neo4j)
+    subject_name = subject.name
+    
+    # Step 1: Delete from Qdrant (3 collections: raw_chunks, low-level-retrieval, high-level-retrieval)
+    _delete_from_qdrant(subject_name)
+    
+    # Step 2: Delete from Neo4j (both Knowledge graph and Tree graph)
+    _delete_from_neo4j(subject_name)
+    
+    # Step 3: Delete from PostgreSQL database
     db.delete(subject)
     db.commit()
-    return {"success": True, "id": subject_id}
+    
+    return {
+        "success": True,
+        "id": subject_id,
+        "subject_name": subject_name,
+        "message": f"Successfully deleted subject '{subject_name}' from database, Qdrant, and Neo4j"
+    }
 
 
 @app.post("/ingest/sync", summary="Upload & ingest a PDF (synchronous, waits for result)")

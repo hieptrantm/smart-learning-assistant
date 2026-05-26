@@ -195,6 +195,20 @@ async def assistant_chat_completions(request: ChatRequest):
                     tool_event_queue: asyncio.Queue = asyncio.Queue()
                     keeps_alive_generator = keep_alive()
                     keep_alive_task = None
+
+                    async def drain_tool_events():
+                        while not tool_event_queue.empty():
+                            tool_res = tool_event_queue.get_nowait()
+                            yield "data: " + json.dumps(
+                                {
+                                    "type": "tool_result",
+                                    "tool_name": tool_res.get("tool_name"),
+                                    "success": tool_res.get("success"),
+                                    "result": tool_res.get("result"),
+                                },
+                                ensure_ascii=False,
+                                default=str,
+                            ) + '\n\n'
                     
                     def callback_text_generate(gen_async_iter):
                         if not gen_future.done():
@@ -240,20 +254,17 @@ async def assistant_chat_completions(request: ChatRequest):
                                     break
 
                             # Drain tool results that arrived during this iteration
-                            while not tool_event_queue.empty():
-                                tool_res = tool_event_queue.get_nowait()
-                                yield "data: " + json.dumps(
-                                    {
-                                        "type": "tool_result",
-                                        "tool_name": tool_res.get("tool_name"),
-                                        "success": tool_res.get("success"),
-                                        "result": tool_res.get("result"),
-                                    },
-                                    ensure_ascii=False,
-                                    default=str,
-                                ) + '\n\n'
+                            async for tool_event in drain_tool_events():
+                                yield tool_event
                     except asyncio.TimeoutError:
                             pass
+
+                    # Drain tool results that may have arrived immediately before
+                    # the agent task completed. Without this, short tool-only
+                    # responses can finish before the loop above has a chance to
+                    # flush the queue to the SSE client.
+                    async for tool_event in drain_tool_events():
+                        yield tool_event
                         
                     keep_alive_active = False
                     
