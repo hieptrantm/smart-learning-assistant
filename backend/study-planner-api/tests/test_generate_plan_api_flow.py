@@ -25,7 +25,7 @@ PLANNER_BASE_URL = os.getenv("PLANNER_BASE_URL", "http://localhost:8005/planner"
 
 POLL_TIMEOUT_SECONDS = int(os.getenv("PLAN_POLL_TIMEOUT_SECONDS", "300"))
 POLL_INTERVAL_SECONDS = float(os.getenv("PLAN_POLL_INTERVAL_SECONDS", "5"))
-SCALE_USERS = int(os.getenv("SCALE_USERS", "3"))
+SCALE_USERS = int(os.getenv("SCALE_USERS", "100"))
 REQUESTS_PER_USER = int(os.getenv("REQUESTS_PER_USER", "2"))
 STRICT_PLAN_COMPLETION = os.getenv("STRICT_PLAN_COMPLETION", "true").lower() == "true"
 EXISTING_SUBJECT_ID = os.getenv("STUDY_PLANNER_SUBJECT_ID")

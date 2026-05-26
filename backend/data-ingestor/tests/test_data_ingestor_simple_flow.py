@@ -28,8 +28,8 @@ NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "testtest")
 
 POLL_TIMEOUT_SECONDS = int(os.getenv("INGEST_POLL_TIMEOUT_SECONDS", "300"))
 POLL_INTERVAL_SECONDS = float(os.getenv("INGEST_POLL_INTERVAL_SECONDS", "5"))
-SCALE_USERS = int(os.getenv("SCALE_USERS", "3"))
-REQUESTS_PER_USER = int(os.getenv("REQUESTS_PER_USER", "2"))
+SCALE_USERS = int(os.getenv("SCALE_USERS", "100"))
+REQUESTS_PER_USER = int(os.getenv("REQUESTS_PER_USER", "1"))
 STRICT_BACKEND_CHECKS = os.getenv("STRICT_BACKEND_CHECKS", "false").lower() == "true"
 
 

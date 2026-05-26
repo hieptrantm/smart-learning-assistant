@@ -11,7 +11,6 @@ from typing import Any
 import httpx
 import pytest
 
-
 SERVICE_DIR = Path(__file__).resolve().parents[1]
 REPORT_PATH = Path(
     os.getenv(
@@ -27,7 +26,7 @@ AI_BASE_URL = os.getenv("AI_BASE_URL", "http://localhost:8005/ai").rstrip("/")
 POLL_TIMEOUT_SECONDS = int(os.getenv("AI_TEST_POLL_TIMEOUT_SECONDS", "300"))
 POLL_INTERVAL_SECONDS = float(os.getenv("AI_TEST_POLL_INTERVAL_SECONDS", "5"))
 STREAM_TIMEOUT_SECONDS = float(os.getenv("AI_STREAM_TIMEOUT_SECONDS", "240"))
-SCALE_USERS = int(os.getenv("SCALE_USERS", "3"))
+SCALE_USERS = int(os.getenv("SCALE_USERS", "100"))
 REQUESTS_PER_USER = int(os.getenv("REQUESTS_PER_USER", "2"))
 STRICT_QUIZ_TOOL = os.getenv("STRICT_QUIZ_TOOL", "true").lower() == "true"
 EXISTING_SUBJECT_ID = os.getenv("AI_TEST_SUBJECT_ID")
